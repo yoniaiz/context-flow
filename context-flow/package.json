@@ -10,7 +10,14 @@
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
-    "@oclif/plugin-plugins": "^5"
+    "@oclif/plugin-plugins": "^5",
+    "smol-toml": "^1.4.1",
+    "nunjucks": "^3.2.4",
+    "dependency-graph": "^1.0.0",
+    "chokidar": "^4.0.3",
+    "esbuild": "^0.25.8",
+    "zod": "^4.0.13",
+    "chalk": "^5.4.1"
   },
   "devDependencies": {
     "@eslint/compat": "^1",
@@ -19,6 +26,7 @@
     "@types/chai": "^4",
     "@types/mocha": "^10",
     "@types/node": "^18",
+    "@types/nunjucks": "^3.2.6",
     "chai": "^4",
     "eslint": "^9",
     "eslint-config-oclif": "^6",
@@ -27,7 +35,7 @@
     "oclif": "^4",
     "shx": "^0.3.3",
     "ts-node": "^10",
-    "typescript": "^5"
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=18.0.0"
