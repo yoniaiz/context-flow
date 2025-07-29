@@ -1,0 +1,61 @@
+# components/base/file-lister.component.toml
+
+[component]
+name = "FileLister"
+description = "Lists and organizes file paths with optional descriptions"
+version = "1.0.0"
+
+[props.files]
+  type = "array"
+  description = "Array of file paths to list"
+  required = true
+
+[props.title]
+  type = "string"
+  description = "Section title for the file list"
+  required = false
+  default = "Files"
+
+[props.show_extensions]
+  type = "boolean"
+  description = "Whether to highlight file extensions"
+  required = false
+  default = true
+
+[props.group_by_type]
+  type = "boolean"
+  description = "Group files by their extensions"
+  required = false
+  default = false
+
+[template]
+content = """
+### {{ props.title }}
+
+{% if props.group_by_type -%}
+{% set extensions = {} %}
+{% for file in props.files -%}
+  {% set ext = file.split('.')[-1] if '.' in file else 'no-ext' %}
+  {% if ext not in extensions %}{% set _ = extensions.update({ext: []}) %}{% endif %}
+  {% set _ = extensions[ext].append(file) %}
+{% endfor -%}
+
+{% for ext, files_by_ext in extensions.items() -%}
+**{{ ext | upper }} Files:**
+{% for file in files_by_ext -%}
+- `{{ file }}`
+{% endfor %}
+
+{% endfor -%}
+{%- else -%}
+{% for file in props.files -%}
+- `{{ file }}`{% if props.show_extensions and '.' in file %} ({{ file.split('.')[-1] }}){% endif %}
+{% endfor -%}
+{%- endif -%}
+"""
+
+[targets]
+  [targets.cursor]
+    auto_include = false
+    always_apply = false
+    command = "On 'Generate'" 

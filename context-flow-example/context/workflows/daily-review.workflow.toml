@@ -1,0 +1,29 @@
+# workflows/daily-review.workflow.toml
+
+[workflow]
+name = "Daily PR Review"
+description = "My standard context for daily pull request reviews"
+
+# Import the composite component
+[use]
+CodeReview = "../components/code-review.component.toml"
+
+[template]
+content = """
+{{ use.CodeReview({
+  files: [
+    "src/core/engine.ts",
+    "src/utils/parser.ts",
+    "src/components/builder.tsx",
+    "tests/engine.spec.ts"
+  ],
+  focus: [
+    "code clarity",
+    "error handling", 
+    "type safety",
+    "test coverage",
+    "performance implications"
+  ],
+  reviewer_role: "senior"
+}) }}
+""" 

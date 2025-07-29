@@ -1,0 +1,59 @@
+# components/base/code-block.component.toml
+
+[component]
+name = "CodeBlock"
+description = "Formats code blocks with syntax highlighting and optional descriptions"
+version = "1.0.0"
+
+[props.code]
+  type = "string"
+  description = "The code content to display"
+  required = true
+
+[props.language]
+  type = "string"
+  description = "Programming language for syntax highlighting"
+  required = false
+  default = "typescript"
+
+[props.description]
+  type = "string"
+  description = "Optional description or explanation of the code"
+  required = false
+
+[props.filename]
+  type = "string"
+  description = "Optional filename to display above the code block"
+  required = false
+
+[props.highlight_lines]
+  type = "array"
+  description = "Array of line numbers to highlight"
+  required = false
+  default = []
+
+[template]
+content = """
+{%- if props.description -%}
+{{ props.description }}
+
+{% endif -%}
+{%- if props.filename -%}
+**File: `{{ props.filename }}`**
+
+{% endif -%}
+```{{ props.language }}
+{{ props.code }}
+```
+
+{%- if props.highlight_lines|length > 0 -%}
+
+*Key lines to focus on: {{ props.highlight_lines|join(', ') }}*
+{%- endif -%}
+"""
+
+[targets]
+  [targets.cursor]
+    auto_include = false
+    always_apply = false
+    command = "On 'Generate'" 

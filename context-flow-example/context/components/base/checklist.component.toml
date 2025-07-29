@@ -1,0 +1,49 @@
+# components/base/checklist.component.toml
+
+[component]
+name = "Checklist"
+description = "Creates formatted checklists for tasks and verification steps"
+version = "1.0.0"
+
+[props.title]
+  type = "string"
+  description = "The title of the checklist"
+  required = true
+
+[props.items]
+  type = "array"
+  description = "Array of checklist items"
+  required = true
+
+[props.style]
+  type = "string"
+  description = "Checklist style ('checkbox', 'bullet', 'numbered')"
+  required = false
+  default = "checkbox"
+
+[props.prefix]
+  type = "string"
+  description = "Optional prefix for each item"
+  required = false
+  default = ""
+
+[template]
+content = """
+## {{ props.title }}
+
+{% for item in props.items -%}
+{%- if props.style == "checkbox" -%}
+- [ ] {{ props.prefix }}{{ item }}
+{%- elif props.style == "numbered" -%}
+{{ loop.index }}. {{ props.prefix }}{{ item }}
+{%- else -%}
+- {{ props.prefix }}{{ item }}
+{%- endif %}
+{% endfor -%}
+"""
+
+[targets]
+  [targets.cursor]
+    auto_include = false
+    always_apply = false
+    command = "On 'Generate'" 

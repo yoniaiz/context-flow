@@ -1,0 +1,49 @@
+# workflows/bug-investigation.workflow.toml
+
+[workflow]
+name = "Bug Investigation"
+description = "Context for investigating and debugging issues"
+
+[use]
+Instruction = "../components/base/instruction.component.toml"
+Checklist = "../components/base/checklist.component.toml"
+FileLister = "../components/base/file-lister.component.toml"
+
+[template]
+content = """
+{{ use.Instruction({
+  text: "Help me investigate this bug systematically",
+  priority: "critical",
+  format: "emphasized"
+}) }}
+
+{{ use.FileLister({
+  files: [
+    "src/auth/login.ts",
+    "src/auth/session.ts", 
+    "src/middleware/auth.ts",
+    "logs/error.log"
+  ],
+  title: "Potentially Related Files",
+  show_extensions: false
+}) }}
+
+{{ use.Checklist({
+  title: "Investigation Steps",
+  items: [
+    "Reproduce the issue locally",
+    "Check error logs and stack traces",
+    "Review recent changes to related files",
+    "Test edge cases and boundary conditions",
+    "Verify environment-specific factors",
+    "Check for race conditions or timing issues"
+  ],
+  style: "numbered"
+}) }}
+
+{{ use.Instruction({
+  text: "Once you identify the root cause, propose a fix with tests",
+  priority: "high",
+  format: "plain"
+}) }}
+""" 

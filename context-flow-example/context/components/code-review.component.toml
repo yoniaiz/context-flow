@@ -1,0 +1,76 @@
+# components/code-review.component.toml
+
+[component]
+name = "CodeReview"
+description = "Generates comprehensive context for performing code reviews"
+version = "1.0.0"
+
+[props.files]
+  type = "array"
+  description = "Array of file paths to be reviewed"
+  required = true
+
+[props.focus]
+  type = "array"
+  description = "List of areas to focus on during the review"
+  required = false
+  default = ["quality", "security", "performance"]
+
+[props.reviewer_role]
+  type = "string"
+  description = "Role of the reviewer ('senior', 'peer', 'junior')"
+  required = false
+  default = "peer"
+
+# Import the base components for composition
+[use]
+Instruction = "./base/instruction.component.toml"
+Checklist = "./base/checklist.component.toml"
+FileLister = "./base/file-lister.component.toml"
+
+[template]
+content = """
+{{ use.Instruction({
+  text: "Please perform a thorough code review on the following files",
+  priority: "high",
+  format: "emphasized"
+}) }}
+
+{{ use.FileLister({
+  files: props.files,
+  title: "Files for Review",
+  show_extensions: true,
+  group_by_type: true
+}) }}
+
+{{ use.Checklist({
+  title: "Review Focus Areas",
+  items: props.focus,
+  style: "checkbox",
+  prefix: "Check for "
+}) }}
+
+{% if props.reviewer_role == "senior" -%}
+{{ use.Instruction({
+  text: "As a senior reviewer, please also mentor and provide educational feedback",
+  priority: "normal",
+  format: "plain"
+}) }}
+{%- elif props.reviewer_role == "junior" -%}
+{{ use.Instruction({
+  text: "Focus on learning patterns and ask questions about anything unclear",
+  priority: "normal",
+  format: "plain"
+}) }}
+{%- endif %}
+"""
+
+[targets]
+  [targets.cursor]
+    always_apply = true
+    command = "On 'Edit'"
+    auto_include = false
+
+  [targets.claude]
+    model = "claude-3-5-sonnet-20240620"
+    temperature = 0.3 
