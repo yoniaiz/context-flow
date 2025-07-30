@@ -1,8 +1,8 @@
 import { parse } from 'smol-toml';
 import { readFileSync, existsSync } from 'fs';
-import { resolve, dirname, join } from 'path';
-import { componentSchema, type ComponentSchema } from '../schemas/component.js';
-import { workflowSchema, type WorkflowSchema } from '../schemas/workflow.js';
+import { resolve, dirname } from 'path';
+import { componentSchema } from '../schemas/component.js';
+import { workflowSchema } from '../schemas/workflow.js';
 import type { ComponentDefinition, WorkflowDefinition } from '../types/basic.js';
 
 /**
