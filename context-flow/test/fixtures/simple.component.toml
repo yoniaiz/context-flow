@@ -15,10 +15,7 @@ required = false
 default = "normal"
 
 [template]
-content = """
-{{ props.text }}
-{% if props.priority == "high" %} (IMPORTANT){% endif %}
-"""
+content = """{{ props.text }}{% if props.priority == "high" %} (IMPORTANT){% endif %}"""
 
 [targets]
   [targets.cursor]
