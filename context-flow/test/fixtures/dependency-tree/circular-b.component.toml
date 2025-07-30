@@ -1,0 +1,18 @@
+[component]
+name = "ComponentB"
+description = "Component B for circular dependency testing"
+version = "1.0.0"
+
+[props.text]
+  type = "string"
+  description = "Text content"
+  required = true
+
+[use]
+ComponentA = "./circular-a.component.toml"
+
+[template]
+content = """
+B: {{ props.text }}
+{{ use.ComponentA({ text: "from B" }) }}
+""" 

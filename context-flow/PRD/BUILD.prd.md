@@ -39,7 +39,9 @@ Recursively resolve the full dependency tree of components specified in [use] bl
 
 Render component templates in a "bottom-up" order, processing the deepest dependencies first.
 
-Identify and execute all @provider calls within templates, substituting the provider's output into the template.
+Identify and execute all @provider calls within templates, substituting the provider's instruction into the template.
+
+@provider calls generate instruction strings that tell the AI tool what actions to perform at runtime, rather than executing those actions during the build process.
 
 Accept a --target <target-name> flag to specify a final output format.
 
@@ -56,7 +58,7 @@ Performance: The build process, while prioritizing correctness with tsc, must be
 
 Error Handling: All build-time errors must be reported to the user following the "Context, Error, Mitigation" pattern, providing clear, actionable feedback.
 
-Security: Providers that access the network (@url) or filesystem (@file, @folder) must do so with clear user intent. The command should not execute arbitrary code from templates.
+Security: Providers that generate instructions for network access (@url) or filesystem access (@file, @folder) must do so with clear user intent. The command should not execute arbitrary code during build time - providers only generate instruction strings.
 
 3. Command Specification
 3.1. Synopsis
@@ -92,7 +94,7 @@ Parse Entrypoint: The CLI reads and validates the specified workflow file (e.g.,
 
 Resolve Dependency Tree: The engine inspects the [use] blocks and recursively loads and parses all referenced component.toml files, building a complete dependency graph.
 
-Recursive Bottom-Up Rendering: The engine renders content from the inside out. If Workflow A uses Component B, and Component B uses Component C, the template for C is rendered first. Its output is then made available to B's template, which is then rendered. This process continues up the tree until the root workflow template is rendered. During this step, all @provider functions are executed.
+Recursive Bottom-Up Rendering: The engine renders content from the inside out. If Workflow A uses Component B, and Component B uses Component C, the template for C is rendered first. Its output is then made available to B's template, which is then rendered. This process continues up the tree until the root workflow template is rendered. During this step, all @provider functions generate instruction strings that tell the AI tool what actions to perform.
 
 Target Configuration Resolution: The engine inspects the --target flag. It then traverses the dependency tree to find any [targets.<target-name>] blocks. If multiple definitions exist for the same target, the configuration from the component highest in the call chain takes precedence.
 
@@ -144,11 +146,11 @@ Mitigation: Show the user the exact lines in their workflow.toml where the input
 
 Scenario: Provider Fails
 
-Context: While executing provider @file in component GetFileContent.
+Context: While generating instructions for provider @file in component GetFileContent.
 
-Error: File not found at path: src/non-existent-file.ts.
+Error: Invalid file path provided: src/non-existent-file.ts.
 
-Mitigation: Instruct the user to check the file path provided to the @file provider in their TOML configuration.
+Mitigation: Instruct the user to check the file path provided to the @file provider in their TOML configuration. Note that the provider generates instructions for the AI tool to read the file, so the path will be validated when the AI tool executes the instruction.
 
 Scenario: Invalid TOML
 

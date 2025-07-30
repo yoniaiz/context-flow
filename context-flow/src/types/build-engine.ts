@@ -114,8 +114,9 @@ export type TemplateContext = {
 
 /**
  * Function signature for provider calls in templates
+ * Providers generate instruction strings for AI tools, not execute content
  */
-export type ProviderFunction = (...args: any[]) => string | Promise<string>;
+export type ProviderFunction = (...args: any[]) => string;
 
 /**
  * Function signature for component usage in templates
@@ -209,5 +210,5 @@ export interface TargetProcessor {
 }
 
 export interface Provider {
-  execute(args: any[], context: TemplateContext): Promise<string>;
+  generateInstruction(args: any[], context: TemplateContext): string;
 } 

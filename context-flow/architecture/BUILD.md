@@ -140,14 +140,13 @@ class ESBuildPipeline {
 
 ```typescript
 interface TemplateEngine {
-  compile(template: string, context: TemplateContext): Promise<string>;
-  renderComponent(component: Component, inputs: ComponentInputs): Promise<string>;
-  executeProviders(template: string, context: ProviderContext): Promise<string>;
+  compile(template: string, context: TemplateContext): string;
+  renderComponent(component: Component, inputs: ComponentInputs): string;
+  executeProviders(template: string, context: ProviderContext): string;
 }
 
 class NunjucksEngine implements TemplateEngine {
   private env: nunjucks.Environment;
-  private templateCache = new Map<string, nunjucks.Template>();
   
   constructor() {
     this.env = new nunjucks.Environment(null, {
@@ -155,23 +154,79 @@ class NunjucksEngine implements TemplateEngine {
       throwOnUndefined: true
     });
     
-    // Register custom filters for providers
+    // Register provider filters for instruction injection
     this.registerProviderFilters();
   }
   
-  async compile(template: string, context: TemplateContext): Promise<string> {
-    const cacheKey = this.getCacheKey(template, context);
+  compile(template: string, context: TemplateContext): string {
+    // No caching needed since providers inject static instructions
+    // Templates are deterministic for same inputs
+    const compiled = nunjucks.compile(template, this.env);
+    return compiled.render(context);
+  }
+  
+  private registerProviderFilters(): void {
+    const providerExecutor = new NunjucksProviderExecutor();
     
-    if (!this.templateCache.has(cacheKey)) {
-      const compiled = nunjucks.compile(template, this.env);
-      this.templateCache.set(cacheKey, compiled);
-    }
+    // Register each provider as a filter
+    this.env.addFilter('file', (path: string, options = {}) => {
+      return providerExecutor.execute({
+        name: 'file',
+        args: { path, ...options }
+      }, {});
+    });
     
-    const template = this.templateCache.get(cacheKey)!;
-    return template.render(context);
+    this.env.addFilter('git_diff', (options = {}) => {
+      return providerExecutor.execute({
+        name: 'git-diff',
+        args: options
+      }, {});
+    });
+    
+    this.env.addFilter('url', (url: string, options = {}) => {
+      return providerExecutor.execute({
+        name: 'url',
+        args: { url, ...options }
+      }, {});
+    });
+    
+    this.env.addFilter('shell', (command: string, options = {}) => {
+      return providerExecutor.execute({
+        name: 'shell',
+        args: { command, ...options }
+      }, {});
+    });
   }
 }
 ```
+
+### Template Usage Examples
+
+```nunjucks
+{# File instruction injection #}
+{{ "src/utils.ts" | file }}
+→ "Please read the file: src/utils.ts"
+
+{# Git diff instruction injection #}
+{{ "" | git_diff(staged=true) }}
+→ "Please run: git diff --staged and analyze the changes"
+
+{# Shell command instruction injection #}
+{{ "npm test" | shell(cwd="./frontend") }}
+→ "Please execute: npm test in directory: ./frontend"
+
+{# URL instruction injection #}
+{{ "https://api.example.com/data" | url(method="POST") }}
+→ "Please fetch content from: https://api.example.com/data using POST method"
+```
+
+### Simplified Architecture Benefits
+
+- **No async complexity**: Providers return synchronous instruction strings
+- **No caching needed**: Templates are deterministic and fast to render
+- **Smaller payloads**: Instructions instead of large content dumps
+- **Real-time accuracy**: AI tools get current data when they execute instructions
+- **Better performance**: No I/O operations during build time
 
 ### 4. Dependency Resolution
 
@@ -381,7 +436,6 @@ sequenceDiagram
 ```typescript
 class BuildWatcher {
   private watcher: chokidar.FSWatcher;
-  private cache: BuildCache;
   private debounceTimer?: NodeJS.Timeout;
   
   async start(entrypoint: string, options: WatchOptions): AsyncGenerator<BuildResult> {
@@ -409,55 +463,53 @@ class BuildWatcher {
   private scheduleRebuild(path: string, event: string): void {
     clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
-      this.invalidateCache(path);
       this.triggerRebuild(path, event);
     }, 50); // 50ms debounce
   }
 }
 ```
 
-### Caching Strategy (Simple Initially)
+### Simplified Caching Strategy
+
+Since providers now inject instructions instead of executing content, caching becomes much simpler:
 
 ```typescript
 interface BuildCache {
-  // Parsed TOML cache
+  // Only cache parsed TOML components (these are expensive to parse/validate)
   getParsedComponent(path: string): ComponentDefinition | null;
   setParsedComponent(path: string, component: ComponentDefinition): void;
   
-  // Compiled template cache  
-  getCompiledTemplate(template: string): nunjucks.Template | null;
-  setCompiledTemplate(template: string, compiled: nunjucks.Template): void;
+  // No template caching needed - templates are fast to render with instruction injection
+  // No provider result caching needed - providers return static instructions
   
-  // Dependency graph cache
-  getDependencyGraph(entrypoint: string): DependencyGraph | null;
-  setDependencyGraph(entrypoint: string, graph: DependencyGraph): void;
-  
-  // Cache invalidation
-  invalidate(pattern: string): void;
+  // Simple cache invalidation
+  invalidateComponent(path: string): void;
   invalidateAll(): void;
 }
 
-class MemoryBuildCache implements BuildCache {
+class SimpleBuildCache implements BuildCache {
   private componentCache = new Map<string, ComponentDefinition>();
-  private templateCache = new Map<string, nunjucks.Template>();
-  private dependencyCache = new Map<string, DependencyGraph>();
   private fileDependencies = new Map<string, Set<string>>();
   
-  invalidate(filePath: string): void {
-    // Smart invalidation based on dependency tracking
-    const affectedEntries = this.fileDependencies.get(filePath) || new Set();
+  invalidateComponent(filePath: string): void {
+    // Only need to invalidate parsed components
+    this.componentCache.delete(filePath);
     
-    for (const entry of affectedEntries) {
-      this.componentCache.delete(entry);
-      this.dependencyCache.delete(entry);
+    // Invalidate any components that depend on this file
+    const dependents = this.fileDependencies.get(filePath) || new Set();
+    for (const dependent of dependents) {
+      this.componentCache.delete(dependent);
     }
-    
-    // Template cache is content-based, so we need to find templates
-    // that might have included this file
-    this.invalidateTemplateCache(filePath);
   }
 }
 ```
+
+### Benefits of Simplified Caching
+
+- **Faster builds**: No cache lookup overhead for templates
+- **Less memory usage**: No large content cached from provider execution
+- **Simpler invalidation**: Only TOML files need cache invalidation
+- **Deterministic rendering**: Same inputs always produce same instructions
 
 ## Provider System Integration
 
@@ -465,7 +517,7 @@ class MemoryBuildCache implements BuildCache {
 
 ```typescript
 interface ProviderExecutor {
-  execute(providerCall: ProviderCall, context: ProviderContext): Promise<string>;
+  execute(providerCall: ProviderCall, context: ProviderContext): string;
   registerProvider(name: string, provider: Provider): void;
   listProviders(): ProviderInfo[];
 }
@@ -474,20 +526,22 @@ class NunjucksProviderExecutor implements ProviderExecutor {
   private providers = new Map<string, Provider>();
   
   constructor() {
-    // Register built-in providers
-    this.registerProvider('file', new FileProvider());
-    this.registerProvider('git-diff', new GitDiffProvider());
-    this.registerProvider('url', new URLProvider());
+    // Register built-in instruction providers
+    this.registerProvider('file', new FileInstructionProvider());
+    this.registerProvider('git-diff', new GitDiffInstructionProvider());
+    this.registerProvider('url', new URLInstructionProvider());
+    this.registerProvider('shell', new ShellInstructionProvider());
   }
   
-  async execute(providerCall: ProviderCall, context: ProviderContext): Promise<string> {
+  execute(providerCall: ProviderCall, context: ProviderContext): string {
     const provider = this.providers.get(providerCall.name);
     if (!provider) {
       throw new ProviderError(`Unknown provider: ${providerCall.name}`);
     }
     
     try {
-      return await provider.execute(providerCall.args, context);
+      // Providers return instruction strings, not executed content
+      return provider.generateInstruction(providerCall.args, context);
     } catch (error) {
       throw new ProviderError(
         `Provider '${providerCall.name}' failed: ${error.message}`,
@@ -495,6 +549,66 @@ class NunjucksProviderExecutor implements ProviderExecutor {
         error
       );
     }
+  }
+}
+
+// Example instruction providers
+class FileInstructionProvider implements Provider {
+  generateInstruction(args: FileProviderArgs): string {
+    const { path, lines, encoding } = args;
+    let instruction = `Please read the file: ${path}`;
+    
+    if (lines) {
+      instruction += ` (lines ${lines})`;
+    }
+    if (encoding && encoding !== 'utf8') {
+      instruction += ` with encoding ${encoding}`;
+    }
+    
+    return instruction;
+  }
+}
+
+class GitDiffInstructionProvider implements Provider {
+  generateInstruction(args: GitDiffProviderArgs): string {
+    const { base, target, paths, staged, context } = args;
+    
+    let command = 'git diff';
+    if (staged) command += ' --staged';
+    if (context) command += ` --context=${context}`;
+    if (base && target) command += ` ${base}..${target}`;
+    if (paths && paths.length > 0) command += ` -- ${paths.join(' ')}`;
+    
+    return `Please run: ${command} and analyze the changes`;
+  }
+}
+
+class URLInstructionProvider implements Provider {
+  generateInstruction(args: URLProviderArgs): string {
+    const { url, method = 'GET', headers } = args;
+    
+    let instruction = `Please fetch content from: ${url}`;
+    if (method !== 'GET') {
+      instruction += ` using ${method} method`;
+    }
+    if (headers && Object.keys(headers).length > 0) {
+      instruction += ` with headers: ${JSON.stringify(headers)}`;
+    }
+    
+    return instruction;
+  }
+}
+
+class ShellInstructionProvider implements Provider {
+  generateInstruction(args: ShellProviderArgs): string {
+    const { command, cwd } = args;
+    
+    let instruction = `Please execute: ${command}`;
+    if (cwd) {
+      instruction += ` in directory: ${cwd}`;
+    }
+    
+    return instruction;
   }
 }
 
@@ -506,6 +620,12 @@ function createProviderFilter(executor: ProviderExecutor) {
   };
 }
 ```
+
+
+- Providers generate instruction strings for AI tools
+- `git-diff` provider returns "Please run: git diff --staged and analyze the changes"
+- `file` provider returns "Please read the file: src/utils.ts"
+- Simple, synchronous, no caching needed
 
 ## Performance Optimizations
 

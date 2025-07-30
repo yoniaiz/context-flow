@@ -59,14 +59,14 @@
 [] 5.6. Create unit tests for dependency resolution
 
 ### [] 6. Nunjucks Template Engine Integration
-**Title**: Implement Template Engine with Provider Support  
+**Title**: Implement Template Engine with Provider Instruction Support  
 **Sub-tasks**:
 [] 6.1. Create NunjucksEngine class implementing TemplateEngine interface
 [] 6.2. Set up Nunjucks environment with proper configuration
-[] 6.3. Implement template compilation and caching
-[] 6.4. Create provider filter system for Nunjucks
-[] 6.5. Implement NunjucksProviderExecutor class
-[] 6.6. Register built-in providers (file, git-diff, url)
+[] 6.3. Implement template rendering without caching (instruction injection is fast)
+[] 6.4. Create provider filter system for Nunjucks instruction generation
+[] 6.5. Implement NunjucksProviderExecutor class for instruction generation
+[] 6.6. Register built-in instruction providers (file, git-diff, url, shell)
 [] 6.7. Add template rendering with context support
 [] 6.8. Create unit tests for template engine
 
@@ -111,14 +111,14 @@
 [] 10.5. Implement AsyncGenerator for watch mode builds
 [] 10.6. Add watch mode configuration options
 
-### [] 11. Caching System Implementation
-**Title**: Build Comprehensive Caching System  
+### [] 11. Simplified Caching System Implementation
+**Title**: Build Simplified Caching System  
 **Sub-tasks**:
-[] 11.1. Create BuildCache interface and MemoryBuildCache implementation
-[] 11.2. Implement component definition caching
-[] 11.3. Add compiled template caching with content-based keys
-[] 11.4. Create dependency graph caching
-[] 11.5. Implement smart cache invalidation logic
+[] 11.1. Create BuildCache interface and SimpleBuildCache implementation
+[] 11.2. Implement component definition caching (TOML parsing is expensive)
+[] 11.3. Remove template caching (not needed with instruction injection)
+[] 11.4. Remove provider result caching (providers return static instructions)
+[] 11.5. Implement simple cache invalidation logic for TOML files
 [] 11.6. Add file dependency tracking for cache invalidation
 [] 11.7. Create cache statistics and debugging utilities
 
@@ -135,12 +135,13 @@
 ### [] 13. Provider System Integration
 **Title**: Complete Provider System Implementation  
 **Sub-tasks**:
-[] 13.1. Implement FileProvider for file content inclusion
-[] 13.2. Create GitDiffProvider for git difference inclusion
-[] 13.3. Implement URLProvider for remote content fetching
-[] 13.4. Add provider argument parsing and validation
-[] 13.5. Create provider execution error handling
-[] 13.6. Add provider registration and discovery system
+[] 13.1. Implement FileProvider for file read instruction generation
+[] 13.2. Create GitDiffProvider for git difference instruction generation  
+[] 13.3. Implement URLProvider for remote content fetch instruction generation
+[] 13.4. Add ShellProvider for command execution instruction generation
+[] 13.5. Add provider argument parsing and validation
+[] 13.6. Create provider instruction generation error handling
+[] 13.7. Add provider registration and discovery system
 
 ## Phase 3: Polish & Testing (Week 5-6)
 

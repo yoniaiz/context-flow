@@ -1,6 +1,6 @@
 /**
  * TemplateEngine interface and related types
- * Handles template compilation, rendering, and caching
+ * Handles template compilation and rendering with provider instruction injection
  */
 
 import type { TemplateContext, ProviderFunction, ComponentFunction } from './build-engine.js';
@@ -9,8 +9,6 @@ import type { TemplateContext, ProviderFunction, ComponentFunction } from './bui
  * Template compilation options
  */
 export type TemplateCompileOptions = {
-  /** Whether to enable caching of compiled templates */
-  cache?: boolean;
   /** Template name for debugging and error reporting */
   name?: string;
   /** Whether to trim whitespace */
@@ -41,27 +39,6 @@ export type TemplateRenderOptions = {
 };
 
 /**
- * Compiled template representation
- */
-export type CompiledTemplate = {
-  /** Unique identifier for the template */
-  id: string;
-  /** Original template content */
-  source: string;
-  /** Compiled template function */
-  render: (context: TemplateContext, options?: TemplateRenderOptions) => Promise<string>;
-  /** Compilation timestamp */
-  compiledAt: Date;
-  /** Template metadata */
-  metadata: {
-    name?: string;
-    dependencies: string[];
-    providers: string[];
-    variables: string[];
-  };
-};
-
-/**
  * Template rendering result
  */
 export type TemplateRenderResult = {
@@ -69,24 +46,12 @@ export type TemplateRenderResult = {
   content: string;
   /** Render duration in milliseconds */
   duration: number;
-  /** Providers that were executed */
+  /** Providers that were used for instruction generation */
   providersUsed: string[];
   /** Components that were used */
   componentsUsed: string[];
   /** Any warnings during rendering */
   warnings: string[];
-};
-
-/**
- * Template cache configuration
- */
-export type TemplateCacheConfig = {
-  /** Maximum number of templates to cache */
-  maxSize: number;
-  /** Time to live for cached templates in milliseconds */
-  ttl: number;
-  /** Whether to enable cache */
-  enabled: boolean;
 };
 
 /**
@@ -97,9 +62,7 @@ export type TemplateEngineConfig = {
   compileOptions: TemplateCompileOptions;
   /** Default rendering options */
   renderOptions: TemplateRenderOptions;
-  /** Cache configuration */
-  cache: TemplateCacheConfig;
-  /** Available providers */
+  /** Available providers for instruction generation */
   providers: Record<string, ProviderFunction>;
   /** Global context available to all templates */
   globals: Record<string, any>;
@@ -107,6 +70,7 @@ export type TemplateEngineConfig = {
 
 /**
  * Template engine interface for rendering component and workflow templates
+ * Simplified for instruction injection - no caching needed
  */
 export interface TemplateEngine {
   /**
@@ -115,22 +79,13 @@ export interface TemplateEngine {
   configure(config: Partial<TemplateEngineConfig>): void;
 
   /**
-   * Compile a template from source
+   * Render a template string with context
+   * No caching needed since instruction injection is fast and deterministic
    */
-  compile(source: string, options?: TemplateCompileOptions): Promise<CompiledTemplate>;
+  render(source: string, context: TemplateContext, options?: TemplateCompileOptions & TemplateRenderOptions): TemplateRenderResult;
 
   /**
-   * Render a compiled template
-   */
-  render(template: CompiledTemplate, context: TemplateContext, options?: TemplateRenderOptions): Promise<TemplateRenderResult>;
-
-  /**
-   * Compile and render a template in one step
-   */
-  renderString(source: string, context: TemplateContext, options?: TemplateCompileOptions & TemplateRenderOptions): Promise<TemplateRenderResult>;
-
-  /**
-   * Register a provider function
+   * Register a provider function for instruction generation
    */
   registerProvider(name: string, provider: ProviderFunction): void;
 
@@ -145,43 +100,10 @@ export interface TemplateEngine {
   registerGlobal(name: string, value: any): void;
 
   /**
-   * Get template from cache
-   */
-  getCachedTemplate(id: string): CompiledTemplate | undefined;
-
-  /**
-   * Clear template cache
-   */
-  clearCache(): void;
-
-  /**
-   * Get cache statistics
-   */
-  getCacheStats(): TemplateCacheStats;
-
-  /**
    * Validate template syntax without compiling
    */
-  validateSyntax(source: string): Promise<TemplateValidationResult>;
+  validateSyntax(source: string): TemplateValidationResult;
 }
-
-/**
- * Template cache statistics
- */
-export type TemplateCacheStats = {
-  /** Total number of templates in cache */
-  size: number;
-  /** Maximum cache size */
-  maxSize: number;
-  /** Cache hit count */
-  hits: number;
-  /** Cache miss count */
-  misses: number;
-  /** Cache hit rate as percentage */
-  hitRate: number;
-  /** Total memory usage estimate */
-  memoryUsage: number;
-};
 
 /**
  * Template validation result

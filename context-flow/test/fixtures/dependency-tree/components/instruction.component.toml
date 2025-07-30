@@ -1,0 +1,21 @@
+[component]
+name = "Instruction"
+description = "Simple instruction component for testing"
+version = "1.0.0"
+
+[props.text]
+  type = "string"
+  description = "The instruction text"
+  required = true
+
+[props.priority]
+  type = "string"
+  description = "Priority level"
+  required = false
+  default = "normal"
+
+[template]
+content = """
+## Instruction: {{ props.text }}
+Priority: {{ props.priority }}
+""" 

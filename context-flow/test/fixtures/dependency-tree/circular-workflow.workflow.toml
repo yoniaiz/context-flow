@@ -1,0 +1,11 @@
+[workflow]
+name = "Circular Test Workflow"
+description = "Workflow that uses circular components"
+
+[use]
+ComponentA = "./circular-a.component.toml"
+
+[template]
+content = """
+{{ use.ComponentA({ text: "test" }) }}
+""" 

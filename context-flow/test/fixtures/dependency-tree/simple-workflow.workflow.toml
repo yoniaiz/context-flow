@@ -1,0 +1,20 @@
+[workflow]
+name = "Simple Test Workflow"
+description = "A basic workflow for testing dependency resolution"
+
+[use]
+Instruction = "./components/instruction.component.toml"
+Checklist = "./components/checklist.component.toml"
+
+[template]
+content = """
+{{ use.Instruction({
+  text: "Test instruction",
+  priority: "normal"
+}) }}
+
+{{ use.Checklist({
+  title: "Test checklist",
+  items: ["item1", "item2"]
+}) }}
+""" 

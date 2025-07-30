@@ -1,6 +1,6 @@
 /**
  * ProviderExecutor interface and related types
- * Handles execution of providers within templates (@file, @git-diff, @url, etc.)
+ * Handles instruction generation for providers within templates (@file, @git-diff, @url, etc.)
  */
 
 import { TemplateContext } from './build-engine.js';
@@ -10,35 +10,23 @@ import { BuildError } from '../errors/base.js';
  * Provider execution options
  */
 export type ProviderExecutionOptions = {
-  /** Timeout for provider execution in milliseconds */
-  timeout?: number;
-  /** Whether to cache provider results */
-  cache?: boolean;
-  /** Cache TTL in milliseconds */
-  cacheTtl?: number;
   /** Working directory for relative path resolution */
   workingDirectory?: string;
-  /** Environment variables for provider execution */
+  /** Environment variables for instruction context */
   environment?: Record<string, string>;
   /** Whether to validate provider arguments */
   validateArgs?: boolean;
-  /** Maximum output size in bytes */
-  maxOutputSize?: number;
 };
 
 /**
  * Provider execution result
  */
 export type ProviderExecutionResult = {
-  /** Whether execution was successful */
+  /** Whether instruction generation was successful */
   success: boolean;
-  /** Provider output content */
-  output: string;
-  /** Execution duration in milliseconds */
-  duration: number;
-  /** Whether result was from cache */
-  fromCache: boolean;
-  /** Warnings during execution */
+  /** Generated instruction string */
+  instruction: string;
+  /** Warnings during instruction generation */
   warnings: string[];
   /** Errors that occurred */
   errors: ProviderError[];
@@ -46,8 +34,6 @@ export type ProviderExecutionResult = {
   metadata: {
     providerName: string;
     arguments: any[];
-    outputSize: number;
-    cacheKey?: string;
   };
 };
 
@@ -66,7 +52,7 @@ export type ProviderError = {
   /** Underlying error */
   cause?: Error;
   /** Error type */
-  type: 'timeout' | 'validation' | 'execution' | 'network' | 'filesystem' | 'permission';
+  type: 'validation' | 'instruction_generation';
 };
 
 /**
@@ -110,23 +96,21 @@ export type ProviderMetadata = {
   examples?: string[];
   /** Provider categories/tags */
   tags?: string[];
-  /** Whether provider requires network access */
-  requiresNetwork?: boolean;
-  /** Whether provider requires filesystem access */
-  requiresFilesystem?: boolean;
+  /** What type of instructions this provider generates */
+  instructionType: 'file_read' | 'command_execution' | 'network_request' | 'data_query';
 };
 
 /**
- * Provider interface
+ * Provider interface for instruction generation
  */
 export interface Provider {
   /** Provider metadata */
   metadata: ProviderMetadata;
 
   /**
-   * Execute the provider with given arguments
+   * Generate instruction string for the AI tool
    */
-  execute(args: any[], context: TemplateContext, options?: ProviderExecutionOptions): Promise<string>;
+  generateInstruction(args: any[], context: TemplateContext, options?: ProviderExecutionOptions): string;
 
   /**
    * Validate provider arguments
@@ -136,17 +120,7 @@ export interface Provider {
   /**
    * Initialize the provider
    */
-  initialize?(config?: any): Promise<void>;
-
-  /**
-   * Cleanup provider resources
-   */
-  cleanup?(): Promise<void>;
-
-  /**
-   * Get cache key for given arguments
-   */
-  getCacheKey?(args: any[], context: TemplateContext): string;
+  initialize?(config?: any): void;
 }
 
 /**
@@ -182,20 +156,20 @@ export type ProviderValidationError = {
 };
 
 /**
- * Built-in provider types
+ * Built-in provider types for instruction generation
  */
 export type BuiltInProviderType = 
-  | 'file'        // Read file content
-  | 'folder'      // List folder contents
-  | 'git-diff'    // Get git differences
-  | 'url'         // Fetch URL content
-  | 'env'         // Get environment variables
-  | 'shell'       // Execute shell commands
-  | 'json'        // Parse/query JSON
-  | 'yaml'        // Parse/query YAML
-  | 'regex'       // Regular expression operations
-  | 'date'        // Date/time operations
-  | 'uuid';       // Generate UUIDs
+  | 'file'        // Generate file read instructions
+  | 'folder'      // Generate folder listing instructions
+  | 'git-diff'    // Generate git diff instructions
+  | 'url'         // Generate URL fetch instructions
+  | 'env'         // Generate environment variable access instructions
+  | 'shell'       // Generate shell command execution instructions
+  | 'json'        // Generate JSON parsing/query instructions
+  | 'yaml'        // Generate YAML parsing/query instructions
+  | 'regex'       // Generate regex operation instructions
+  | 'date'        // Generate date/time operation instructions
+  | 'uuid';       // Generate UUID generation instructions
 
 /**
  * Provider registry entry
@@ -213,15 +187,13 @@ export type ProviderRegistryEntry = {
   enabled: boolean;
   /** Usage statistics */
   stats: {
-    executionCount: number;
-    totalDuration: number;
+    instructionCount: number;
     errorCount: number;
-    cacheHits: number;
   };
 };
 
 /**
- * Provider executor interface
+ * Provider executor interface for instruction generation
  */
 export interface ProviderExecutor {
   /**
@@ -235,14 +207,14 @@ export interface ProviderExecutor {
   unregister(name: string): boolean;
 
   /**
-   * Execute a provider by name
+   * Generate instruction using a provider
    */
   execute(
     providerName: string, 
     args: any[], 
     context: TemplateContext, 
     options?: ProviderExecutionOptions
-  ): Promise<ProviderExecutionResult>;
+  ): ProviderExecutionResult;
 
   /**
    * Get provider by name
@@ -270,11 +242,6 @@ export interface ProviderExecutor {
   setProviderEnabled(name: string, enabled: boolean): void;
 
   /**
-   * Clear provider cache
-   */
-  clearCache(providerName?: string): void;
-
-  /**
    * Get provider execution statistics
    */
   getStats(providerName?: string): ProviderStats;
@@ -291,26 +258,16 @@ export interface ProviderExecutor {
 export type ProviderExecutorConfig = {
   /** Default execution options */
   defaultOptions: ProviderExecutionOptions;
-  /** Cache configuration */
-  cache: {
-    enabled: boolean;
-    maxSize: number;
-    defaultTtl: number;
-  };
   /** Security configuration */
   security: {
     /** Allowed provider types */
     allowedProviders: string[];
-    /** Whether to allow network providers */
+    /** Whether to allow network instruction providers */
     allowNetwork: boolean;
-    /** Whether to allow filesystem providers */
+    /** Whether to allow filesystem instruction providers */
     allowFilesystem: boolean;
-    /** Whether to allow shell providers */
+    /** Whether to allow shell instruction providers */
     allowShell: boolean;
-    /** Maximum execution time per provider */
-    maxExecutionTime: number;
-    /** Maximum output size per provider */
-    maxOutputSize: number;
   };
 };
 
@@ -318,33 +275,21 @@ export type ProviderExecutorConfig = {
  * Provider execution statistics
  */
 export type ProviderStats = {
-  /** Total number of executions */
-  totalExecutions: number;
-  /** Total execution time */
-  totalDuration: number;
-  /** Average execution time */
-  averageDuration: number;
+  /** Total number of instruction generations */
+  totalInstructions: number;
   /** Number of errors */
   errorCount: number;
   /** Error rate as percentage */
   errorRate: number;
-  /** Number of cache hits */
-  cacheHits: number;
-  /** Cache hit rate as percentage */
-  cacheHitRate: number;
-  /** Memory usage estimate */
-  memoryUsage: number;
   /** Per-provider statistics */
   providers: Record<string, {
-    executions: number;
-    duration: number;
+    instructions: number;
     errors: number;
-    cacheHits: number;
   }>;
 };
 
 /**
- * File provider specific types
+ * File provider specific types for instruction generation
  */
 export type FileProviderArgs = {
   /** File path to read */
@@ -358,7 +303,7 @@ export type FileProviderArgs = {
 };
 
 /**
- * URL provider specific types
+ * URL provider specific types for instruction generation
  */
 export type URLProviderArgs = {
   /** URL to fetch */
@@ -374,7 +319,7 @@ export type URLProviderArgs = {
 };
 
 /**
- * Git diff provider specific types
+ * Git diff provider specific types for instruction generation
  */
 export type GitDiffProviderArgs = {
   /** Base commit/branch */
@@ -390,7 +335,7 @@ export type GitDiffProviderArgs = {
 };
 
 /**
- * Shell provider specific types
+ * Shell provider specific types for instruction generation
  */
 export type ShellProviderArgs = {
   /** Command to execute */
@@ -403,22 +348,4 @@ export type ShellProviderArgs = {
   timeout?: number;
   /** Whether to capture stderr */
   captureStderr?: boolean;
-};
-
-/**
- * Provider cache entry
- */
-export type ProviderCacheEntry = {
-  /** Cached result */
-  result: string;
-  /** Cache timestamp */
-  timestamp: Date;
-  /** Cache key */
-  key: string;
-  /** TTL in milliseconds */
-  ttl: number;
-  /** Provider name */
-  provider: string;
-  /** Arguments hash */
-  argsHash: string;
 }; 

@@ -1,0 +1,29 @@
+[component]
+name = "Checklist"
+description = "Checklist component that uses instruction component"
+version = "1.0.0"
+
+[props.title]
+  type = "string"
+  description = "Checklist title"
+  required = true
+
+[props.items]
+  type = "array"
+  description = "List of items"
+  required = true
+
+[use]
+SubInstruction = "./instruction.component.toml"
+
+[template]
+content = """
+{{ use.SubInstruction({
+  text: props.title,
+  priority: "high"
+}) }}
+
+{% for item in props.items -%}
+- [ ] {{ item }}
+{% endfor -%}
+""" 
