@@ -26,15 +26,16 @@
 [✅] 2.6. Add SourceLocation type and formatting utilities
 [✅] 2.7. Create error formatting with chalk colors
 
-### [] 3. Core Type Definitions
+### [✅] 3. Core Type Definitions
 **Title**: Define Core TypeScript Interfaces and Types  
+**Summary**: summary in task-summaries/task-3-core-type-definitions.md file
 **Sub-tasks**:
-[] 3.1. Create BuildEngine interface and related types
-[] 3.2. Define BuildOptions, BuildResult, BuildMetadata interfaces
-[] 3.3. Create TemplateEngine interface and types
-[] 3.4. Define DependencyResolver interface and types
-[] 3.5. Create TargetProcessor interface and plugin types
-[] 3.6. Define ProviderExecutor interface and types
+[✅] 3.1. Create BuildEngine interface and related types
+[✅] 3.2. Define BuildOptions, BuildResult, BuildMetadata interfaces
+[✅] 3.3. Create TemplateEngine interface and types
+[✅] 3.4. Define DependencyResolver interface and types
+[✅] 3.5. Create TargetProcessor interface and plugin types
+[✅] 3.6. Define ProviderExecutor interface and types
 
 ### [✅] 4. TOML Parser with Zod Validation
 **Title**: Implement TOML Parsing and Schema Validation  

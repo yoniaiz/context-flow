@@ -1,0 +1,48 @@
+---
+description: Task completion workflow and requirements
+globs: []
+alwaysApply: false
+---
+
+# Task Completion Workflow
+
+Use this rule when working on tasks defined in TASK.md.
+
+## Task Process
+
+1. **Get Context**: Understand the general task based on the **Based on** section in TASK.md
+2. **Plan First**: Always plan and consult before starting any task
+3. **Single Task Focus**: Complete only one task at a time
+4. **Mark Complete**: Update TASK.md with [✅] when task is finished
+
+## Task Requirements
+
+### Always Include Tests
+- End every task with comprehensive unit tests
+- Ensure all tests pass before marking task complete
+- Use Mocha + Chai testing framework
+
+### Always Include Documentation  
+- Update relevant documentation
+- Ensure documentation reflects current functionality
+- Keep documentation up to date with changes
+
+### Always Add Summary
+- Create a task summary in `task-summaries/` folder
+- Add summary reference to the **Summary** section in TASK.md
+- Include key decisions, changes made, and lessons learned
+
+## Quality Standards
+
+- All code must be fully functional and working
+- No TODOs, placeholders, or missing pieces
+- Follow TypeScript and oclif best practices
+- Maintain backward compatibility where possible
+
+## File Organization
+
+- Task summaries go in `task-summaries/` directory
+- Use descriptive filenames for summaries
+- Reference summaries in TASK.md for tracking
+
+@TASK.md

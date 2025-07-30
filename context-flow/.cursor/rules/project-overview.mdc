@@ -1,0 +1,39 @@
+---
+description: Context Flow project overview and core concepts
+globs: []
+alwaysApply: true
+---
+
+# Context Flow Project Overview
+
+**Context Flow** is a CLI framework for "Context Engineering" - composing and managing AI prompt context through reusable components.
+
+## Core Architecture
+
+- **Components** (`component.toml`) - Reusable context building blocks
+- **Workflows** (`workflow.toml`) - Compose components into complete context payloads  
+- **Providers** (plugins) - Source data from various systems (@file, @git-diff, etc.)
+
+## Technology Stack
+
+- **TypeScript** with ES Modules and Node 18+
+- **oclif** framework for CLI with plugin architecture
+- **TOML** configuration format for human-readable config
+- **Mocha + Chai** for testing
+- **ESLint** with oclif config
+
+## Key Design Patterns
+
+- **Component Composition**: Small, single-purpose components that compose into workflows
+- **Plugin Architecture**: oclif-based extensibility for context providers
+- **Git-native Distribution**: Components shared via Git, not npm
+- **TOML Configuration**: Human-readable config over YAML/JSON
+
+## Project Goals
+
+Create a "React-like component ecosystem for context" with focus on:
+- Developer experience
+- Extensibility  
+- Reusability
+
+**Status**: Early development phase - most functionality is stubbed with TODOs

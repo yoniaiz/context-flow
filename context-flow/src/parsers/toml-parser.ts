@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { componentSchema } from '../schemas/component.js';
 import { workflowSchema } from '../schemas/workflow.js';
-import type { ComponentDefinition, WorkflowDefinition } from '../types/basic.js';
+import type { ComponentDefinition, WorkflowDefinition } from '../types/schema-definitions.js';
 import { ValidationError } from '../errors/index.js';
 
 /**

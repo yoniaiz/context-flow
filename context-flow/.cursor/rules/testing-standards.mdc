@@ -1,0 +1,45 @@
+---
+description: Testing standards and requirements for Context Flow
+globs: ["test/**/*", "**/*.test.ts", "**/*.spec.ts"]
+alwaysApply: false
+---
+
+# Testing Standards
+
+## Testing Framework
+- **Mocha + Chai** for unit and integration tests
+- Tests located in `test/` directory
+- Use `.test.ts` file extension
+- Run tests with `npm run test`
+
+## Testing Requirements
+
+### Always End Tasks with Tests
+- Every completed task MUST include comprehensive unit tests
+- All tests MUST pass before considering task complete
+- Tests should cover both success and error scenarios
+
+### Test Structure
+- Follow AAA pattern: Arrange, Act, Assert
+- Use descriptive test names that explain the behavior being tested
+- Group related tests using `describe` blocks
+- Use `it` blocks for individual test cases
+
+### Test Coverage
+- Test all public APIs and exported functions
+- Include edge cases and error handling
+- Mock external dependencies appropriately
+- Test both positive and negative scenarios
+
+## Existing Test Structure
+- `test/commands/` - Tests for CLI commands
+- `test/unit/` - Unit tests for core functionality
+- `test/fixtures/` - Test data and mock files
+
+## Testing Commands
+- `npm run test` - Run all tests
+- `npm run posttest` - Runs ESLint after tests (automatic)
+
+## Test Configuration
+- Configuration in `.mocharc.json`
+- TypeScript support configured in `test/tsconfig.json`

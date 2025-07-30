@@ -1,0 +1,47 @@
+---
+description: Development commands and workflow for Context Flow
+globs: ["package.json", "tsconfig.json", "src/**/*", "bin/**/*"]
+alwaysApply: false
+---
+
+# Development Workflow
+
+## Available Commands
+
+### Development Commands
+- `npm run build` - Compile TypeScript to dist/ directory
+- `npm run test` - Run Mocha tests
+- `npm run lint` - Run ESLint
+- `npm run posttest` - Automatically runs lint after tests
+
+### CLI Commands (when built)
+- `context init` - Initialize new context project
+- `context add <github-url>` - Add component library from Git
+- `context pull <component-name>` - Copy component to local project
+- `context build [workflow-file]` - Build context payload
+- `context serve` - Start development server for Visual Builder
+- `context plugin:install <package>` - Install provider plugin
+- `context plugin:list` - List installed plugins
+- `context plugin:uninstall <package>` - Remove provider plugin
+
+## Architecture Guidelines
+
+### Core Structure
+- `src/index.ts` - Main entry point (exports oclif run)
+- `src/commands/` - CLI command implementations
+- `bin/run.js` - Executable entry point
+- `dist/` - Compiled JavaScript output
+
+### Key Implementation Files
+- **Init** (`src/commands/init.ts`) - Creates project structure
+- **Build** (`src/commands/build.ts`) - Processes TOML files and assembles context
+- **Add** (`src/commands/add.ts`) - Clones component libraries from Git
+- **Plugin commands** (`src/commands/plugin/`) - Manage oclif-based provider plugins
+
+## Development Standards
+
+- Use **TypeScript** with ES Modules
+- Follow **oclif** patterns for CLI commands
+- Use **TOML** format for configuration files
+- Maintain Node 18+ compatibility
+- Follow ESLint rules with oclif configuration

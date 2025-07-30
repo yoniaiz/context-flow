@@ -1,0 +1,58 @@
+---
+description: Architecture patterns and design principles for Context Flow
+globs: ["src/**/*.ts", "**/*.component.toml", "**/*.workflow.toml"]
+alwaysApply: false
+---
+
+# Architecture Patterns
+
+## Core Design Principles
+
+### Component Composition
+- Design small, single-purpose components that compose into larger workflows
+- Each component should have a clear, focused responsibility
+- Components should be reusable across different workflows
+
+### Plugin Architecture  
+- Use oclif-based extensibility for context providers
+- Providers should follow consistent interfaces
+- Support for dynamic plugin loading and management
+
+### Git-native Distribution
+- Components and workflows are shared via Git repositories, not npm
+- Version control is built into the distribution model
+- Enable collaborative development of context libraries
+
+## TOML Configuration Standards
+
+### Component Files (`*.component.toml`)
+- Define reusable context building blocks
+- Include metadata for discovery and composition
+- Follow consistent naming and structure conventions
+
+### Workflow Files (`*.workflow.toml`)  
+- Compose multiple components into complete context payloads
+- Define execution order and dependencies
+- Support parameterization and customization
+
+## TypeScript Standards
+
+### Module Organization
+- Use ES Modules with `type: "module"` in package.json
+- Target ES2022 for modern JavaScript features
+- Maintain Node 18+ compatibility
+
+### Command Structure
+- Follow oclif patterns for CLI command implementation
+- Implement proper error handling and validation
+- Use TypeScript types for better developer experience
+
+### Provider Pattern
+- Context providers use consistent interface
+- Support different data sources (@file, @git-diff, etc.)
+- Enable extensibility through plugin system
+
+## Error Handling
+- Use structured error types for different failure modes
+- Provide clear, actionable error messages
+- Support debugging and troubleshooting workflows
