@@ -1,0 +1,14 @@
+[workflow]
+name = "SimpleWorkflow"
+description = "A simple test workflow"
+
+[use]
+SimpleComponent = "./simple.component.toml"
+
+[template]
+content = """
+{{ use.SimpleComponent({
+  text: "Hello World",
+  priority: "high"
+}) }}
+"""

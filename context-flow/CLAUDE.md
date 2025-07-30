@@ -70,3 +70,15 @@ The project implements a component-based system where:
 - **Node 18+**: Minimum supported version
 
 The project aims to create a "React-like component ecosystem for context" with a focus on developer experience, extensibility, and reusability.
+
+### Workflow
+
+1. When you are pointed to complete task in TASK.md file, you should get the context what the general task is based on which is pointed in the **Based on**: section, and once you complete the task you should mark it as complete with [✅] in the task.md file.
+
+2. You always should do only one task at a time, and always plan and consult with me before you start the task.
+
+3. Always and the task with unit tests, and make sure that all tests are passing.
+
+4. Always and the task with documentation, and make sure that the documentation is up to date.
+
+5. Always and with a summary of the complete task, add it under task-summaries folder

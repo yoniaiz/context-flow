@@ -1,0 +1,25 @@
+[component]
+name = "SimpleComponent"
+description = "A simple test component"
+version = "1.0.0"
+
+[props.text]
+type = "string"
+description = "The text to display"
+required = true
+
+[props.priority]
+type = "string"
+description = "Priority level"
+required = false
+default = "normal"
+
+[template]
+content = """
+{{ props.text }}
+{% if props.priority == "high" %} (IMPORTANT){% endif %}
+"""
+
+[targets]
+  [targets.cursor]
+    auto_include = true
