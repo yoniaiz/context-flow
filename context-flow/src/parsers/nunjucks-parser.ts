@@ -96,7 +96,7 @@ export class NunjucksParser {
 
     // Create the use proxy for component access
     const useProxy = this.createUseProxy(workflow, context);
-    
+
     // Set up the template context
     const templateContext = {
       parent: context.parent,
@@ -107,7 +107,7 @@ export class NunjucksParser {
 
     try {
       const content = this.env.renderString(workflow.template.content, templateContext);
-      
+
       return {
         content: content.trim(),
         usedComponents: [...useProxy.getUsedComponents()]
@@ -258,12 +258,14 @@ export class NunjucksParser {
     // Validate props
     this.validateComponentProps(component, context.props || {});
 
-    // For now, we'll do simple rendering without nested components
-    // to avoid recursion issues in the proxy
+    // Create the use proxy for nested component access
+    const useProxy = this.createUseProxy(component, context);
+
     const templateContext = {
       component: component.component,
       parent: context.parent,
-      props: context.props || {}
+      props: context.props || {},
+      use: useProxy // Add the use proxy for nested components
     };
 
     try {
@@ -271,7 +273,7 @@ export class NunjucksParser {
       
       return {
         content: content.trim(),
-        usedComponents: []
+        usedComponents: [...useProxy.getUsedComponents()]
       };
     } catch (error) {
       throw new ValidationError(

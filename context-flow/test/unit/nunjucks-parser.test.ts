@@ -18,6 +18,7 @@ describe('NunjucksParser', () => {
   let tomlParser: TOMLParser;
   const fixturesDir = resolve(__dirname, '../fixtures');
   const workflowPath = resolve(fixturesDir, 'simple.workflow.toml');
+  const childParentWorkflowPath = resolve(fixturesDir, 'child-parent.workflow.toml');
 
   beforeEach(() => {
     nunjucksParser = new NunjucksParser();
@@ -25,6 +26,27 @@ describe('NunjucksParser', () => {
   });
 
   describe('renderWorkflow', () => {
+    it('render parent component with child component', async () => {
+      const dependencyTree = new WorkflowDependencyTree(tomlParser, childParentWorkflowPath);
+      const treeResult = await dependencyTree.resolve();
+      nunjucksParser.setDependencyTree(treeResult);
+
+      const result = await nunjucksParser.renderWorkflow({
+        template: {
+          content: '{{ use.ParentComponent({}) }}'
+        },
+        use: {
+          ParentComponent: './parent.component.toml'
+        },
+        workflow:{
+          description: 'test',
+          name: 'test'
+        }
+      });
+
+      expect(result.content).toBe('Hello from parent component Hello from child component Hey child!');
+    })
+
     it('should render workflow with component prop passing', async () => {
       // Parse the workflow and build dependency tree
       const dependencyTree = new WorkflowDependencyTree(tomlParser, workflowPath);

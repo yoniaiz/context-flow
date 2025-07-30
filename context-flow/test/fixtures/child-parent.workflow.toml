@@ -1,0 +1,11 @@
+[workflow]
+name = "ChildParentWorkflow"
+description = "A simple test workflow with child and parent components"
+
+[use]
+ParentComponent = "./parent.component.toml"
+
+[template]
+content = """
+{{ use.ParentComponent({}) }}
+"""

@@ -1,0 +1,12 @@
+[component]
+name = "ChildComponent"
+description = "A simple child component"
+version = "1.0.0"
+
+[props.fromParent]
+type = "string"
+description = "The text to display"
+required = true
+
+[template]
+content = """Hello from child component {{ props.fromParent }}"""

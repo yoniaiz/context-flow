@@ -1,0 +1,10 @@
+[component]
+name = "ParentComponent"
+description = "A simple parent component"
+version = "1.0.0"
+
+[use]
+ChildComponent = "./child.component.toml"
+
+[template]
+content = """Hello from parent component {{ use.ChildComponent({fromParent: "Hey child!"}) }}"""
