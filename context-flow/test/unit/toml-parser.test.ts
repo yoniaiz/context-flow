@@ -3,6 +3,7 @@ import { describe, it, beforeEach } from 'mocha';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { TOMLParser } from '../../src/parsers/toml-parser.js';
+import { ValidationError } from '../../src/errors/validation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,15 +47,17 @@ describe('TOMLParser', () => {
       expect(parser.getCacheStats().components).to.equal(1);
     });
 
-    it('should throw error for non-existent file', async () => {
+    it('should throw ValidationError for non-existent file', async () => {
       const nonExistentPath = resolve(fixturesDir, 'non-existent.component.toml');
       
       try {
         await parser.parseComponent(nonExistentPath);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        expect(error).to.be.an('error');
-        expect((error as Error).message).to.include('Component file does not exist');
+        expect(error).to.be.instanceOf(ValidationError);
+        expect((error as ValidationError).message).to.include('Invalid file path');
+        expect((error as ValidationError).field).to.equal('path');
+        expect((error as ValidationError).sourceLocation?.filePath).to.include('non-existent.component.toml');
       }
     });
   });
@@ -83,15 +86,17 @@ describe('TOMLParser', () => {
       expect(parser.getCacheStats().workflows).to.equal(1);
     });
 
-    it('should throw error for non-existent file', async () => {
+    it('should throw ValidationError for non-existent file', async () => {
       const nonExistentPath = resolve(fixturesDir, 'non-existent.workflow.toml');
       
       try {
         await parser.parseWorkflow(nonExistentPath);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        expect(error).to.be.an('error');
-        expect((error as Error).message).to.include('Workflow file does not exist');
+        expect(error).to.be.instanceOf(ValidationError);
+        expect((error as ValidationError).message).to.include('Invalid file path');
+        expect((error as ValidationError).field).to.equal('path');
+        expect((error as ValidationError).sourceLocation?.filePath).to.include('non-existent.workflow.toml');
       }
     });
   });
@@ -107,15 +112,17 @@ describe('TOMLParser', () => {
       expect(result).to.have.property('workflow');
     });
 
-    it('should throw error for unknown file types', async () => {
+    it('should throw ValidationError for unknown file types', async () => {
       const unknownPath = resolve(fixturesDir, 'unknown.toml');
       
       try {
         await parser.parseFile(unknownPath);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        expect(error).to.be.an('error');
-        expect((error as Error).message).to.include('Unknown file type');
+        expect(error).to.be.instanceOf(ValidationError);
+        expect((error as ValidationError).message).to.include('Invalid file path');
+        expect((error as ValidationError).errorInfo.mitigation).to.include('Unknown file type');
+        expect((error as ValidationError).sourceLocation?.filePath).to.include('unknown.toml');
       }
     });
   });
@@ -150,6 +157,83 @@ describe('TOMLParser', () => {
       // This test depends on the workflow file referencing a component that exists
       const result = await parser.parseWorkflow(workflowPath);
       expect(result.use).to.have.property('SimpleComponent');
+    });
+  });
+
+  describe('error handling', () => {
+    it('should throw ValidationError for invalid component path reference', async () => {
+      // Create a temporary workflow with invalid component reference
+      const invalidWorkflowPath = resolve(fixturesDir, '../temp-invalid.workflow.toml');
+      const fs = await import('fs');
+      
+      const invalidContent = `
+[workflow]
+name = "InvalidWorkflow"
+description = "Workflow with invalid component reference"
+
+[use]
+InvalidComponent = "./non-existent-component.component.toml"
+
+[template]
+content = "Test content"
+`;
+      
+      fs.writeFileSync(invalidWorkflowPath, invalidContent);
+      
+      try {
+        await parser.parseWorkflow(invalidWorkflowPath);
+        expect.fail('Should have thrown a ValidationError');
+      } catch (error) {
+        expect(error).to.be.instanceOf(ValidationError);
+        // The error could be either path validation or schema validation depending on which fails first
+        expect((error as ValidationError).message).to.match(/Invalid file path|Schema validation failed/);
+      } finally {
+        // Clean up
+        if (fs.existsSync(invalidWorkflowPath)) {
+          fs.unlinkSync(invalidWorkflowPath);
+        }
+      }
+    });
+
+    it('should throw ValidationError for non-component file reference', async () => {
+      // Create a temporary workflow with reference to non-.component.toml file
+      const invalidWorkflowPath = resolve(fixturesDir, '../temp-wrong-type.workflow.toml');
+      const wrongTypePath = resolve(fixturesDir, '../temp-wrong.toml');
+      const fs = await import('fs');
+      
+      // Create a dummy file that's not a .component.toml
+      fs.writeFileSync(wrongTypePath, '[test]\nname = "test"');
+      
+      const invalidContent = `
+[workflow]
+name = "WrongTypeWorkflow"
+description = "Workflow with wrong file type reference"
+
+[use]
+WrongType = "./temp-wrong.toml"
+
+[template]
+content = "Test content"
+`;
+      
+      fs.writeFileSync(invalidWorkflowPath, invalidContent);
+      
+      try {
+        await parser.parseWorkflow(invalidWorkflowPath);
+        expect.fail('Should have thrown a ValidationError');
+      } catch (error) {
+        expect(error).to.be.instanceOf(ValidationError);
+        // The error message could be different depending on what validation fails first
+        expect((error as ValidationError).message).to.match(/Invalid file path|Schema validation failed/);
+      } finally {
+        // Clean up
+        if (fs.existsSync(invalidWorkflowPath)) {
+          fs.unlinkSync(invalidWorkflowPath);
+        }
+        if (fs.existsSync(wrongTypePath)) {
+          fs.unlinkSync(wrongTypePath);
+        }
+      }
     });
   });
 });

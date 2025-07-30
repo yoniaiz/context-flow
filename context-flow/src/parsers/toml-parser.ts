@@ -4,6 +4,7 @@ import { resolve, dirname } from 'path';
 import { componentSchema } from '../schemas/component.js';
 import { workflowSchema } from '../schemas/workflow.js';
 import type { ComponentDefinition, WorkflowDefinition } from '../types/basic.js';
+import { ValidationError } from '../errors/index.js';
 
 /**
  * Simple TOML parser with basic Zod validation for Context Flow
@@ -15,22 +16,35 @@ export class TOMLParser {
   /**
    * Validate that component paths in the 'use' section exist
    */
-  private validateComponentPaths(useSection: Record<string, unknown> | undefined, baseDir: string): void {
+  private validateComponentPaths(useSection: Record<string, unknown> | undefined, baseDir: string, sourceFile: string): void {
     if (!useSection) return;
 
     for (const [componentName, relativePath] of Object.entries(useSection)) {
       if (typeof relativePath !== 'string') {
-        throw new Error(`Component '${componentName}' path must be a string, got: ${typeof relativePath}`);
+        throw ValidationError.typeMismatch(
+          `use.${componentName}`,
+          'string',
+          typeof relativePath,
+          sourceFile
+        );
       }
 
       const fullPath = resolve(baseDir, relativePath);
       
       if (!existsSync(fullPath)) {
-        throw new Error(`Component '${componentName}' references non-existent file: ${relativePath} (resolved to: ${fullPath})`);
+        throw ValidationError.invalidPath(
+          relativePath,
+          `File does not exist at resolved path: ${fullPath}`,
+          sourceFile
+        );
       }
 
       if (!fullPath.endsWith('.component.toml')) {
-        throw new Error(`Component '${componentName}' must reference a .component.toml file, got: ${relativePath}`);
+        throw ValidationError.invalidPath(
+          relativePath,
+          'Component references must point to .component.toml files',
+          sourceFile
+        );
       }
     }
   }
@@ -47,18 +61,51 @@ export class TOMLParser {
 
     try {
       if (!existsSync(resolvedPath)) {
-        throw new Error(`Component file does not exist: ${filePath}`);
+        throw ValidationError.invalidPath(
+          filePath,
+          'Component file does not exist',
+          filePath
+        );
       }
 
       const content = readFileSync(resolvedPath, 'utf-8');
-      const parsed = parse(content);
+      let parsed: any;
+      
+      try {
+        parsed = parse(content);
+      } catch (parseError) {
+        throw ValidationError.tomlParse(
+          parseError instanceof Error ? parseError.message : 'Unknown TOML parsing error',
+          resolvedPath
+        );
+      }
       
       // Validate with Zod schema
-      const validated = componentSchema.parse(parsed);
+      let validated: any;
+      try {
+        validated = componentSchema.parse(parsed);
+      } catch (zodError: any) {
+        // Extract first validation error from Zod
+        const firstError = zodError.errors?.[0];
+        if (firstError) {
+          throw ValidationError.schema(
+            firstError.path?.join('.') || 'unknown',
+            firstError.message,
+            firstError.received,
+            resolvedPath
+          );
+        }
+        throw ValidationError.schema(
+          'unknown',
+          zodError.message || 'Schema validation failed',
+          'unknown',
+          resolvedPath
+        );
+      }
       
       // Validate component paths
       const baseDir = dirname(resolvedPath);
-      this.validateComponentPaths(validated.use, baseDir);
+      this.validateComponentPaths(validated.use, baseDir, resolvedPath);
       
       // Convert to our internal type
       const component: ComponentDefinition = {
@@ -72,7 +119,16 @@ export class TOMLParser {
       this.componentCache.set(resolvedPath, component);
       return component;
     } catch (error) {
-      throw new Error(`Failed to parse component file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Re-throw ValidationErrors as-is, wrap other errors
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw ValidationError.schema(
+        'unknown',
+        `Failed to parse component file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'unknown',
+        resolvedPath
+      );
     }
   }
 
@@ -88,18 +144,51 @@ export class TOMLParser {
 
     try {
       if (!existsSync(resolvedPath)) {
-        throw new Error(`Workflow file does not exist: ${filePath}`);
+        throw ValidationError.invalidPath(
+          filePath,
+          'Workflow file does not exist',
+          filePath
+        );
       }
 
       const content = readFileSync(resolvedPath, 'utf-8');
-      const parsed = parse(content);
+      let parsed: any;
+      
+      try {
+        parsed = parse(content);
+      } catch (parseError) {
+        throw ValidationError.tomlParse(
+          parseError instanceof Error ? parseError.message : 'Unknown TOML parsing error',
+          resolvedPath
+        );
+      }
       
       // Validate with Zod schema
-      const validated = workflowSchema.parse(parsed);
+      let validated: any;
+      try {
+        validated = workflowSchema.parse(parsed);
+      } catch (zodError: any) {
+        // Extract first validation error from Zod
+        const firstError = zodError.errors?.[0];
+        if (firstError) {
+          throw ValidationError.schema(
+            firstError.path?.join('.') || 'unknown',
+            firstError.message,
+            firstError.received,
+            resolvedPath
+          );
+        }
+        throw ValidationError.schema(
+          'unknown',
+          zodError.message || 'Schema validation failed',
+          'unknown',
+          resolvedPath
+        );
+      }
       
       // Validate component paths
       const baseDir = dirname(resolvedPath);
-      this.validateComponentPaths(validated.use, baseDir);
+      this.validateComponentPaths(validated.use, baseDir, resolvedPath);
       
       // Convert to our internal type
       const workflow: WorkflowDefinition = {
@@ -111,7 +200,16 @@ export class TOMLParser {
       this.workflowCache.set(resolvedPath, workflow);
       return workflow;
     } catch (error) {
-      throw new Error(`Failed to parse workflow file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Re-throw ValidationErrors as-is, wrap other errors
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw ValidationError.schema(
+        'unknown',
+        `Failed to parse workflow file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'unknown',
+        resolvedPath
+      );
     }
   }
 
@@ -124,7 +222,11 @@ export class TOMLParser {
     } else if (filePath.endsWith('.workflow.toml')) {
       return this.parseWorkflow(filePath);
     } else {
-      throw new Error(`Unknown file type: ${filePath}. Expected .component.toml or .workflow.toml`);
+      throw ValidationError.invalidPath(
+        filePath,
+        'Unknown file type. Expected .component.toml or .workflow.toml',
+        filePath
+      );
     }
   }
 

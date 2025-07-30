@@ -81,4 +81,4 @@ The project aims to create a "React-like component ecosystem for context" with a
 
 4. Always and the task with documentation, and make sure that the documentation is up to date.
 
-5. Always and with a summary of the complete task, add it under task-summaries folder
+5. Always and with a summary of the complete task, add it under task-summaries folder and add the summary to the TASK.md file in **Summary**: section of the task.
