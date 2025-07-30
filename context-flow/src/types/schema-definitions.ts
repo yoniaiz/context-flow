@@ -4,6 +4,7 @@
  */
 
 import type { z } from 'zod';
+
 import { componentSchema } from '../schemas/component.js';
 import { workflowSchema } from '../schemas/workflow.js';
 
@@ -24,49 +25,49 @@ export type ParsedTomlContent = ComponentSchema | WorkflowSchema;
 export type TargetConfig = NonNullable<ComponentSchema['targets']>[string];
 
 // Type guards for runtime type checking
-export function isComponentSchema(parsed: ParsedTomlContent): parsed is ComponentSchema {
-  return 'component' in parsed && parsed.component !== undefined;
+export function isComponentSchema(parsed: null | ParsedTomlContent | undefined): parsed is ComponentSchema {
+  return parsed !== null && parsed !== undefined && typeof parsed === 'object' && 'component' in parsed && parsed.component !== undefined;
 }
 
-export function isWorkflowSchema(parsed: ParsedTomlContent): parsed is WorkflowSchema {
-  return 'workflow' in parsed && parsed.workflow !== undefined;
+export function isWorkflowSchema(parsed: null | ParsedTomlContent | undefined): parsed is WorkflowSchema {
+  return parsed !== null && parsed !== undefined && typeof parsed === 'object' && 'workflow' in parsed && parsed.workflow !== undefined;
 }
 
 // Validation helper types
 export type TomlValidationContext = {
-  /** File path being validated */
-  filePath: string;
   /** Base directory for resolving relative paths */
   baseDir: string;
+  /** File path being validated */
+  filePath: string;
   /** Whether to perform strict validation */
   strict?: boolean;
 };
 
 // Parser result types that integrate with our comprehensive type system
 export type ParsedComponent = {
-  /** Original schema data */
-  schema: ComponentSchema;
-  /** File path */
-  filePath: string;
-  /** Resolved absolute path */
-  resolvedPath: string;
-  /** Parse timestamp */
-  parsedAt: Date;
   /** Content hash for caching */
   contentHash?: string;
+  /** File path */
+  filePath: string;
+  /** Parse timestamp */
+  parsedAt: Date;
+  /** Resolved absolute path */
+  resolvedPath: string;
+  /** Original schema data */
+  schema: ComponentSchema;
 };
 
 export type ParsedWorkflow = {
-  /** Original schema data */
-  schema: WorkflowSchema;
-  /** File path */
-  filePath: string;
-  /** Resolved absolute path */
-  resolvedPath: string;
-  /** Parse timestamp */
-  parsedAt: Date;
   /** Content hash for caching */
   contentHash?: string;
+  /** File path */
+  filePath: string;
+  /** Parse timestamp */
+  parsedAt: Date;
+  /** Resolved absolute path */
+  resolvedPath: string;
+  /** Original schema data */
+  schema: WorkflowSchema;
 };
 
 export type ParsedTomlFile = ParsedComponent | ParsedWorkflow;
@@ -105,40 +106,40 @@ export type TargetName = keyof ComponentTargets;
 
 // Enhanced validation types that work with our error system
 export type SchemaValidationResult = {
-  /** Whether validation passed */
-  valid: boolean;
+  /** File context */
+  context: TomlValidationContext;
   /** Validated data (if successful) */
   data?: ParsedTomlContent;
   /** Validation errors */
   errors: Array<{
-    path: string;
     message: string;
+    path: string;
     value?: unknown;
   }>;
-  /** File context */
-  context: TomlValidationContext;
+  /** Whether validation passed */
+  valid: boolean;
 };
 
 // Type utilities for template content analysis
 export type TemplateAnalysis = {
-  /** Variables referenced in template */
-  variables: Set<string>;
-  /** Provider calls found */
-  providers: Set<string>;
-  /** Component usage references */
-  components: Set<string>;
   /** Estimated complexity score */
   complexity: number;
+  /** Component usage references */
+  components: Set<string>;
+  /** Provider calls found */
+  providers: Set<string>;
+  /** Variables referenced in template */
+  variables: Set<string>;
 };
 
 // Integration types with the comprehensive type system
 export type TomlSchemaMetadata = {
-  /** Schema version */
-  version: string;
   /** Supported features */
   features: string[];
   /** Validation mode */
-  mode: 'strict' | 'permissive';
+  mode: 'permissive' | 'strict';
   /** Last updated timestamp */
   updatedAt: Date;
+  /** Schema version */
+  version: string;
 }; 

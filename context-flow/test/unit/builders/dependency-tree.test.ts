@@ -1,15 +1,15 @@
-import { expect } from 'chai';
-import { describe, it, beforeEach } from 'mocha';
-import { resolve, join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { TOMLParser } from '../../../src/parsers/toml-parser.js';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { 
-  WorkflowDependencyTree, 
-  ComponentDependencyTree,
+  ComponentDependencyTree, 
+  type DependencyTreeOptions,
   type DependencyTreeResult,
-  type DependencyTreeOptions
+  WorkflowDependencyTree
 } from '../../../src/builders/DependencyTree.js';
 import { DependencyError } from '../../../src/errors/index.js';
+import { TOMLParser } from '../../../src/parsers/toml-parser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,7 +34,7 @@ describe('DependencyTree', () => {
         const entry = join(fixturesDir, 'simple-workflow.workflow.toml');
         const tree = new WorkflowDependencyTree(parser, entry);
         
-        expect(tree).to.be.instanceOf(WorkflowDependencyTree);
+        expect(tree).toBeInstanceOf(WorkflowDependencyTree);
       });
 
       it('should accept custom options', () => {
@@ -44,14 +44,14 @@ describe('DependencyTree', () => {
         };
         const tree = new WorkflowDependencyTree(parser, entry, options);
         
-        expect(tree).to.be.instanceOf(WorkflowDependencyTree);
+        expect(tree).toBeInstanceOf(WorkflowDependencyTree);
       });
 
       it('should resolve relative paths to absolute paths', () => {
         const relativePath = 'test/fixtures/dependency-tree/simple-workflow.workflow.toml';
         const tree = new WorkflowDependencyTree(parser, relativePath);
         
-        expect(tree).to.be.instanceOf(WorkflowDependencyTree);
+        expect(tree).toBeInstanceOf(WorkflowDependencyTree);
       });
     });
 
@@ -62,14 +62,14 @@ describe('DependencyTree', () => {
         
         const result: DependencyTreeResult = await tree.resolve();
         
-        expect(result.rootPath).to.equal(resolve(entry));
-        expect(result.nodeCount).to.equal(3); // workflow + 2 components
-        expect(result.graph.size()).to.equal(3);
-        expect(result.dependencyOrder).to.have.length(3);
+        expect(result.rootPath).toBe(resolve(entry));
+        expect(result.nodeCount).toBe(3); // workflow + 2 components
+        expect(result.graph.size()).toBe(3);
+        expect(result.dependencyOrder).toHaveLength(3);
         
         // Root should be first in dependency order (no dependencies)
-        expect(result.dependencyOrder[0]).to.include('instruction.component.toml');
-        expect(result.dependencyOrder[2]).to.include('simple-workflow.workflow.toml');
+        expect(result.dependencyOrder[0]).toContain('instruction.component.toml');
+        expect(result.dependencyOrder[2]).toContain('simple-workflow.workflow.toml');
       });
 
       it('should handle nested component dependencies', async () => {
@@ -88,23 +88,25 @@ describe('DependencyTree', () => {
         const checklistIndex = order.findIndex(p => p.includes('checklist.component.toml'));
         const workflowIndex = order.findIndex(p => p.includes('simple-workflow.workflow.toml'));
         
-        expect(instructionIndex).to.be.lessThan(checklistIndex);
-        expect(checklistIndex).to.be.lessThan(workflowIndex);
+        expect(instructionIndex).toBeLessThan(checklistIndex);
+        expect(checklistIndex).toBeLessThan(workflowIndex);
       });
 
       it('should detect circular dependencies and throw error', async () => {
         const entry = join(fixturesDir, 'circular-workflow.workflow.toml');
         const tree = new WorkflowDependencyTree(parser, entry);
         
+        await expect(async () => {
+          await tree.resolve();
+        }).rejects.toThrow(DependencyError);
+        
         try {
           await tree.resolve();
-          expect.fail('Should have thrown a DependencyError');
+          expect.unreachable('Should have thrown a DependencyError');
         } catch (error) {
-          expect(error).to.be.instanceOf(DependencyError);
+          expect(error).toBeInstanceOf(DependencyError);
         }
       });
-
-
 
       it('should cache parsed results when enabled', async () => {
         const entry = join(fixturesDir, 'simple-workflow.workflow.toml');
@@ -117,8 +119,8 @@ describe('DependencyTree', () => {
         await tree2.resolve();
         const cacheAfter = WorkflowDependencyTree.getGlobalCacheStats();
         
-        expect(cacheBefore.size).to.be.greaterThan(0);
-        expect(cacheAfter.size).to.equal(cacheBefore.size);
+        expect(cacheBefore.size).toBeGreaterThan(0);
+        expect(cacheAfter.size).toBe(cacheBefore.size);
       });
 
       it('should not use cache when disabled', async () => {
@@ -128,18 +130,22 @@ describe('DependencyTree', () => {
         await tree.resolve();
         const cacheStats = WorkflowDependencyTree.getGlobalCacheStats();
         
-        expect(cacheStats.size).to.equal(0);
+        expect(cacheStats.size).toBe(0);
       });
 
       it('should throw error for non-existent workflow file', async () => {
         const entry = join(fixturesDir, 'non-existent.workflow.toml');
         const tree = new WorkflowDependencyTree(parser, entry);
         
+        await expect(async () => {
+          await tree.resolve();
+        }).rejects.toThrow();
+        
         try {
           await tree.resolve();
-          expect.fail('Should have thrown an error');
+          expect.unreachable('Should have thrown an error');
         } catch (error) {
-          expect(error).to.be.instanceOf(Error);
+          expect(error).toBeInstanceOf(Error);
         }
       });
 
@@ -148,11 +154,15 @@ describe('DependencyTree', () => {
         const entry = join(fixturesDir, 'invalid-workflow.workflow.toml');
         const tree = new WorkflowDependencyTree(parser, entry);
         
+        await expect(async () => {
+          await tree.resolve();
+        }).rejects.toThrow();
+        
         try {
           await tree.resolve();
-          expect.fail('Should have thrown an error');
+          expect.unreachable('Should have thrown an error');
         } catch (error) {
-          expect(error).to.be.instanceOf(Error);
+          expect(error).toBeInstanceOf(Error);
         }
       });
     });
@@ -162,8 +172,8 @@ describe('DependencyTree', () => {
         WorkflowDependencyTree.clearGlobalCache();
         const stats = WorkflowDependencyTree.getGlobalCacheStats();
         
-        expect(stats.size).to.equal(0);
-        expect(stats.paths).to.have.length(0);
+        expect(stats.size).toBe(0);
+        expect(stats.paths).toHaveLength(0);
       });
 
       it('should return cache statistics', async () => {
@@ -173,9 +183,9 @@ describe('DependencyTree', () => {
         await tree.resolve();
         const stats = WorkflowDependencyTree.getGlobalCacheStats();
         
-        expect(stats.size).to.be.greaterThan(0);
-        expect(stats.paths).to.be.an('array');
-        expect(stats.paths.length).to.equal(stats.size);
+        expect(stats.size).toBeGreaterThan(0);
+        expect(stats.paths).toEqual(expect.any(Array));
+        expect(stats.paths.length).toBe(stats.size);
       });
     });
   });
@@ -186,7 +196,7 @@ describe('DependencyTree', () => {
         const entry = join(fixturesDir, 'components/instruction.component.toml');
         const tree = new ComponentDependencyTree(parser, entry);
         
-        expect(tree).to.be.instanceOf(ComponentDependencyTree);
+        expect(tree).toBeInstanceOf(ComponentDependencyTree);
       });
 
       it('should accept custom options', () => {
@@ -196,7 +206,7 @@ describe('DependencyTree', () => {
         };
         const tree = new ComponentDependencyTree(parser, entry, options);
         
-        expect(tree).to.be.instanceOf(ComponentDependencyTree);
+        expect(tree).toBeInstanceOf(ComponentDependencyTree);
       });
     });
 
@@ -207,10 +217,10 @@ describe('DependencyTree', () => {
         
         const result: DependencyTreeResult = await tree.resolve();
         
-        expect(result.rootPath).to.equal(resolve(entry));
-        expect(result.nodeCount).to.equal(1);
-        expect(result.dependencyOrder).to.have.length(1);
-        expect(result.dependencyOrder[0]).to.include('instruction.component.toml');
+        expect(result.rootPath).toBe(resolve(entry));
+        expect(result.nodeCount).toBe(1);
+        expect(result.dependencyOrder).toHaveLength(1);
+        expect(result.dependencyOrder[0]).toContain('instruction.component.toml');
       });
 
       it('should resolve component with dependencies', async () => {
@@ -219,28 +229,30 @@ describe('DependencyTree', () => {
         
         const result: DependencyTreeResult = await tree.resolve();
         
-        expect(result.nodeCount).to.equal(2); // checklist + instruction
-        expect(result.dependencyOrder).to.have.length(2);
+        expect(result.nodeCount).toBe(2); // checklist + instruction
+        expect(result.dependencyOrder).toHaveLength(2);
         
         // Instruction should come before checklist
         const instructionIndex = result.dependencyOrder.findIndex(p => p.includes('instruction.component.toml'));
         const checklistIndex = result.dependencyOrder.findIndex(p => p.includes('checklist.component.toml'));
-        expect(instructionIndex).to.be.lessThan(checklistIndex);
+        expect(instructionIndex).toBeLessThan(checklistIndex);
       });
 
       it('should detect circular dependencies in components', async () => {
         const entry = join(fixturesDir, 'circular-a.component.toml');
         const tree = new ComponentDependencyTree(parser, entry);
         
+        await expect(async () => {
+          await tree.resolve();
+        }).rejects.toThrow(DependencyError);
+        
         try {
           await tree.resolve();
-          expect.fail('Should have thrown a DependencyError');
+          expect.unreachable('Should have thrown a DependencyError');
         } catch (error) {
-          expect(error).to.be.instanceOf(DependencyError);
+          expect(error).toBeInstanceOf(DependencyError);
         }
       });
-
-
     });
 
     describe('static methods', () => {
@@ -248,8 +260,8 @@ describe('DependencyTree', () => {
         ComponentDependencyTree.clearGlobalCache();
         const stats = ComponentDependencyTree.getGlobalCacheStats();
         
-        expect(stats.size).to.equal(0);
-        expect(stats.paths).to.have.length(0);
+        expect(stats.size).toBe(0);
+        expect(stats.paths).toHaveLength(0);
       });
     });
   });
@@ -266,12 +278,12 @@ describe('DependencyTree', () => {
       const componentResult = await componentTree.resolve();
       
       // Both should have instruction component in their trees
-      expect(workflowResult.dependencyOrder.some(p => p.includes('instruction.component.toml'))).to.be.true;
-      expect(componentResult.dependencyOrder.some(p => p.includes('instruction.component.toml'))).to.be.true;
+      expect(workflowResult.dependencyOrder.some(p => p.includes('instruction.component.toml'))).toBe(true);
+      expect(componentResult.dependencyOrder.some(p => p.includes('instruction.component.toml'))).toBe(true);
       
       // Cache should contain shared components
       const cacheStats = WorkflowDependencyTree.getGlobalCacheStats();
-      expect(cacheStats.size).to.be.greaterThan(0);
+      expect(cacheStats.size).toBeGreaterThan(0);
     });
 
     it('should handle different caching strategies', async () => {
@@ -290,7 +302,7 @@ describe('DependencyTree', () => {
       const cacheAfterSecond = WorkflowDependencyTree.getGlobalCacheStats();
       
       // Cache should remain unchanged after second build
-      expect(cacheAfterSecond.size).to.equal(cacheAfterFirst.size);
+      expect(cacheAfterSecond.size).toBe(cacheAfterFirst.size);
     });
   });
 }); 

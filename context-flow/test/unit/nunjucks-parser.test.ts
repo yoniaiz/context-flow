@@ -1,7 +1,8 @@
-import { expect } from 'chai';
-import { beforeEach, describe, it } from 'mocha';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import type { DependencyTreeResult } from '../../src/builders/DependencyTree.js';
 
 import { WorkflowDependencyTree } from '../../src/builders/DependencyTree.js';
 import { ValidationError } from '../../src/errors/validation.js';
@@ -40,15 +41,15 @@ describe('NunjucksParser', () => {
       const result = await nunjucksParser.renderWorkflow(workflow as WorkflowDefinition);
 
       // Check that content was rendered
-      expect(result.content).to.be.a('string');
-      expect(result.content.length).to.be.greaterThan(0);
+      expect(result.content).toBeTypeOf('string');
+      expect(result.content.length).toBeGreaterThan(0);
       
       // Should contain the expected text from the component
-      expect(result.content).to.include('Hello World');
-      expect(result.content).to.include('(IMPORTANT)'); // because priority is "high"
+      expect(result.content).toContain('Hello World');
+      expect(result.content).toContain('(IMPORTANT)'); // because priority is "high"
       
       // Should track used components
-      expect(result.usedComponents).to.include('SimpleComponent');
+      expect(result.usedComponents).toContain('SimpleComponent');
     });
 
     it('should validate component props', async () => {
@@ -75,12 +76,16 @@ describe('NunjucksParser', () => {
       nunjucksParser.setDependencyTree(treeResult);
 
       // Should throw validation error for wrong prop type
+      await expect(async () => {
+        await nunjucksParser.renderWorkflow(invalidWorkflow);
+      }).rejects.toThrow(ValidationError);
+      
       try {
         await nunjucksParser.renderWorkflow(invalidWorkflow);
-        expect.fail('Should have thrown validation error');
+        expect.unreachable('Should have thrown validation error');
       } catch (error) {
-        expect(error).to.be.instanceOf(ValidationError);
-        expect((error as ValidationError).message).to.include('should be of type \'string\'');
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('should be of type \'string\'');
       }
     });
 
@@ -107,12 +112,16 @@ describe('NunjucksParser', () => {
       nunjucksParser.setDependencyTree(treeResult);
 
       // Should throw validation error for missing required prop
+      await expect(async () => {
+        await nunjucksParser.renderWorkflow(invalidWorkflow);
+      }).rejects.toThrow(ValidationError);
+      
       try {
         await nunjucksParser.renderWorkflow(invalidWorkflow);
-        expect.fail('Should have thrown validation error');
+        expect.unreachable('Should have thrown validation error');
       } catch (error) {
-        expect(error).to.be.instanceOf(ValidationError);
-        expect((error as ValidationError).message).to.include('Required prop \'text\' is missing');
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Required prop \'text\' is missing');
       }
     });
 
@@ -139,12 +148,16 @@ describe('NunjucksParser', () => {
       nunjucksParser.setDependencyTree(treeResult);
 
       // Should throw validation error for undefined component
+      await expect(async () => {
+        await nunjucksParser.renderWorkflow(invalidWorkflow);
+      }).rejects.toThrow(ValidationError);
+      
       try {
         await nunjucksParser.renderWorkflow(invalidWorkflow);
-        expect.fail('Should have thrown validation error');
+        expect.unreachable('Should have thrown validation error');
       } catch (error) {
-        expect(error).to.be.instanceOf(ValidationError);
-        expect((error as ValidationError).message).to.include('Component \'NonExistentComponent\' is not defined');
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Component \'NonExistentComponent\' is not defined');
       }
     });
   });
@@ -156,13 +169,13 @@ describe('NunjucksParser', () => {
       const component = await tomlParser.parseComponent(componentPath);
 
       // Create mock dependency tree
-      const mockTree = {
+      const mockTree: Partial<DependencyTreeResult> = {
         dependencyOrder: [componentPath],
         graph: { getNodeData: () => ({}) },
         nodeCount: 1,
         rootPath: componentPath
       };
-      nunjucksParser.setDependencyTree(mockTree as any);
+      nunjucksParser.setDependencyTree(mockTree as DependencyTreeResult);
 
       // Render the component with props
       const result = await nunjucksParser.renderComponent(component, {
@@ -173,8 +186,8 @@ describe('NunjucksParser', () => {
       });
 
       // Check rendered content
-      expect(result.content).to.include('Test Message');
-      expect(result.content).to.include('(IMPORTANT)'); // because priority is "high"
+      expect(result.content).toContain('Test Message');
+      expect(result.content).toContain('(IMPORTANT)'); // because priority is "high"
     });
   });
 }); 

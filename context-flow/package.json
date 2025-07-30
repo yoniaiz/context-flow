@@ -11,13 +11,12 @@
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^5",
-    "smol-toml": "^1.4.1",
-    "nunjucks": "^3.2.4",
+    "chalk": "^5.4.1",
     "dependency-graph": "^1.0.0",
-    "chokidar": "^4.0.3",
     "esbuild": "^0.25.8",
-    "zod": "^4.0.13",
-    "chalk": "^5.4.1"
+    "nunjucks": "^3.2.4",
+    "smol-toml": "^1.4.1",
+    "zod": "^4.0.13"
   },
   "devDependencies": {
     "@eslint/compat": "^1",
@@ -27,6 +26,7 @@
     "@types/mocha": "^10",
     "@types/node": "^18",
     "@types/nunjucks": "^3.2.6",
+    "@vitest/ui": "^2.1.8",
     "chai": "^4",
     "eslint": "^9",
     "eslint-config-oclif": "^6",
@@ -35,7 +35,8 @@
     "oclif": "^4",
     "shx": "^0.3.3",
     "ts-node": "^10",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -73,7 +74,10 @@
     "lint": "eslint",
     "postpack": "shx rm -f oclif.manifest.json",
     "prepack": "oclif manifest && oclif readme",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test": "npm run test:unit && npm run test:commands",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:commands": "mocha --forbid-only \"test/commands/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
   "types": "dist/index.d.ts"

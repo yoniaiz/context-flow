@@ -1,7 +1,7 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
+import { describe, expect, it } from 'vitest';
+
 import { ProviderError } from '../../../src/errors/provider.js';
-import { ErrorSeverity, ErrorCategory } from '../../../src/errors/types.js';
+import { ErrorCategory, ErrorSeverity } from '../../../src/errors/types.js';
 
 describe('ProviderError', () => {
   describe('basic error creation', () => {
@@ -12,37 +12,37 @@ describe('ProviderError', () => {
         'Check file permissions'
       );
 
-      expect(error).to.be.instanceOf(ProviderError);
-      expect(error).to.be.instanceOf(Error);
-      expect(error.name).to.equal('ProviderError');
-      expect(error.message).to.equal('Provider execution failed');
-      expect(error.severity).to.equal(ErrorSeverity.ERROR);
-      expect(error.category).to.equal(ErrorCategory.PROVIDER);
+      expect(error).toBeInstanceOf(ProviderError);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.name).toBe('ProviderError');
+      expect(error.message).toBe('Provider execution failed');
+      expect(error.severity).toBe(ErrorSeverity.ERROR);
+      expect(error.category).toBe(ErrorCategory.PROVIDER);
     });
 
     it('should accept optional provider details', () => {
-      const providerArgs = { file: 'test.txt', encoding: 'utf-8' };
+      const providerArgs = { encoding: 'utf-8', file: 'test.txt' };
       const error = new ProviderError(
         'Test error',
         'Test context',
         'Test mitigation',
         { filePath: '/test/component.toml' },
         {
+          exitCode: 1,
           provider: 'fileProvider',
           providerArgs,
           providerType: 'execution',
-          exitCode: 1,
-          stdout: 'Some output',
-          stderr: 'Error message'
+          stderr: 'Error message',
+          stdout: 'Some output'
         }
       );
 
-      expect(error.provider).to.equal('fileProvider');
-      expect(error.providerArgs).to.deep.equal(providerArgs);
-      expect(error.providerType).to.equal('execution');
-      expect(error.exitCode).to.equal(1);
-      expect(error.stdout).to.equal('Some output');
-      expect(error.stderr).to.equal('Error message');
+      expect(error.provider).toBe('fileProvider');
+      expect(error.providerArgs).toEqual(providerArgs);
+      expect(error.providerType).toBe('execution');
+      expect(error.exitCode).toBe(1);
+      expect(error.stdout).toBe('Some output');
+      expect(error.stderr).toBe('Error message');
     });
   });
 
@@ -57,17 +57,17 @@ describe('ProviderError', () => {
           8
         );
 
-        expect(error.message).to.equal("Provider 'unknownProvider' not found");
-        expect(error.provider).to.equal('unknownProvider');
-        expect(error.providerType).to.equal('not_found');
-        expect(error.errorInfo.mitigation).to.include('file, git-diff, url');
-        expect(error.sourceLocation?.line).to.equal(8);
+        expect(error.message).toBe("Provider 'unknownProvider' not found");
+        expect(error.provider).toBe('unknownProvider');
+        expect(error.providerType).toBe('not_found');
+        expect(error.errorInfo.mitigation).toContain('file, git-diff, url');
+        expect(error.sourceLocation?.line).toBe(8);
       });
     });
 
     describe('invalidArgs()', () => {
       it('should create an invalid arguments error', () => {
-        const args = { file: '', encoding: 'invalid' };
+        const args = { encoding: 'invalid', file: '' };
         const error = ProviderError.invalidArgs(
           'fileProvider',
           args,
@@ -76,11 +76,11 @@ describe('ProviderError', () => {
           12
         );
 
-        expect(error.message).to.include("Invalid arguments for provider 'fileProvider'");
-        expect(error.message).to.include('File path cannot be empty');
-        expect(error.provider).to.equal('fileProvider');
-        expect(error.providerArgs).to.deep.equal(args);
-        expect(error.providerType).to.equal('invalid_args');
+        expect(error.message).toContain("Invalid arguments for provider 'fileProvider'");
+        expect(error.message).toContain('File path cannot be empty');
+        expect(error.provider).toBe('fileProvider');
+        expect(error.providerArgs).toEqual(args);
+        expect(error.providerType).toBe('invalid_args');
       });
     });
 
@@ -96,13 +96,13 @@ describe('ProviderError', () => {
           5
         );
 
-        expect(error.message).to.include("Provider 'gitProvider' execution failed with exit code 128");
-        expect(error.message).to.include('Git command failed');
-        expect(error.provider).to.equal('gitProvider');
-        expect(error.providerType).to.equal('execution');
-        expect(error.exitCode).to.equal(128);
-        expect(error.stdout).to.equal('stdout content');
-        expect(error.stderr).to.equal('stderr content');
+        expect(error.message).toContain("Provider 'gitProvider' execution failed with exit code 128");
+        expect(error.message).toContain('Git command failed');
+        expect(error.provider).toBe('gitProvider');
+        expect(error.providerType).toBe('execution');
+        expect(error.exitCode).toBe(128);
+        expect(error.stdout).toBe('stdout content');
+        expect(error.stderr).toBe('stderr content');
       });
 
       it('should create an execution error without exit code', () => {
@@ -112,8 +112,8 @@ describe('ProviderError', () => {
           '/test/component.toml'
         );
 
-        expect(error.message).to.equal("Provider 'urlProvider' execution failed: Network timeout");
-        expect(error.exitCode).to.be.undefined;
+        expect(error.message).toBe("Provider 'urlProvider' execution failed: Network timeout");
+        expect(error.exitCode).toBeUndefined();
       });
     });
 
@@ -127,11 +127,11 @@ describe('ProviderError', () => {
           10
         );
 
-        expect(error.message).to.include("Provider 'fileProvider' cannot access file '/missing/file.txt'");
-        expect(error.message).to.include('File does not exist');
-        expect(error.provider).to.equal('fileProvider');
-        expect(error.providerType).to.equal('permission');
-        expect(error.providerArgs?.file).to.equal('/missing/file.txt');
+        expect(error.message).toContain("Provider 'fileProvider' cannot access file '/missing/file.txt'");
+        expect(error.message).toContain('File does not exist');
+        expect(error.provider).toBe('fileProvider');
+        expect(error.providerType).toBe('permission');
+        expect(error.providerArgs?.file).toBe('/missing/file.txt');
       });
     });
 
@@ -144,10 +144,10 @@ describe('ProviderError', () => {
           7
         );
 
-        expect(error.message).to.equal("Provider 'urlProvider' timed out after 5000ms");
-        expect(error.provider).to.equal('urlProvider');
-        expect(error.providerType).to.equal('timeout');
-        expect(error.errorInfo.mitigation).to.include('Increase the timeout');
+        expect(error.message).toBe("Provider 'urlProvider' timed out after 5000ms");
+        expect(error.provider).toBe('urlProvider');
+        expect(error.providerType).toBe('timeout');
+        expect(error.errorInfo.mitigation).toContain('Increase the timeout');
       });
     });
 
@@ -160,11 +160,11 @@ describe('ProviderError', () => {
           15
         );
 
-        expect(error.message).to.include("Git provider 'gitDiffProvider' failed");
-        expect(error.message).to.include('not a git repository');
-        expect(error.provider).to.equal('gitDiffProvider');
-        expect(error.providerType).to.equal('execution');
-        expect(error.errorInfo.mitigation).to.include('Ensure you are in a git repository');
+        expect(error.message).toContain("Git provider 'gitDiffProvider' failed");
+        expect(error.message).toContain('not a git repository');
+        expect(error.provider).toBe('gitDiffProvider');
+        expect(error.providerType).toBe('execution');
+        expect(error.errorInfo.mitigation).toContain('Ensure you are in a git repository');
       });
     });
 
@@ -178,12 +178,12 @@ describe('ProviderError', () => {
           20
         );
 
-        expect(error.message).to.include("Network provider 'urlProvider' failed to fetch");
-        expect(error.message).to.include('https://example.com/api');
-        expect(error.message).to.include('Connection refused');
-        expect(error.provider).to.equal('urlProvider');
-        expect(error.providerType).to.equal('execution');
-        expect(error.providerArgs?.url).to.equal('https://example.com/api');
+        expect(error.message).toContain("Network provider 'urlProvider' failed to fetch");
+        expect(error.message).toContain('https://example.com/api');
+        expect(error.message).toContain('Connection refused');
+        expect(error.provider).toBe('urlProvider');
+        expect(error.providerType).toBe('execution');
+        expect(error.providerArgs?.url).toBe('https://example.com/api');
       });
     });
   });
@@ -201,11 +201,11 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedOutput();
-        expect(formatted).to.include('STDOUT:');
-        expect(formatted).to.include('Standard output content');
-        expect(formatted).to.include('STDERR:');
-        expect(formatted).to.include('Error output content');
-        expect(formatted).to.include('Exit Code: 1');
+        expect(formatted).toContain('STDOUT:');
+        expect(formatted).toContain('Standard output content');
+        expect(formatted).toContain('STDERR:');
+        expect(formatted).toContain('Error output content');
+        expect(formatted).toContain('Exit Code: 1');
       });
 
       it('should handle empty output', () => {
@@ -216,7 +216,7 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedOutput();
-        expect(formatted).to.equal('No output available');
+        expect(formatted).toBe('No output available');
       });
 
       it('should handle whitespace-only output', () => {
@@ -230,17 +230,17 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedOutput();
-        expect(formatted).to.include('Exit Code: 0');
-        expect(formatted).not.to.include('STDOUT:');
-        expect(formatted).not.to.include('STDERR:');
+        expect(formatted).toContain('Exit Code: 0');
+        expect(formatted).not.toContain('STDOUT:');
+        expect(formatted).not.toContain('STDERR:');
       });
     });
 
     describe('getFormattedArgs()', () => {
       it('should format provider arguments', () => {
         const args = {
-          file: '/test/file.txt',
           encoding: 'utf-8',
+          file: '/test/file.txt',
           lines: 10
         };
         const error = new ProviderError(
@@ -252,9 +252,9 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedArgs();
-        expect(formatted).to.include('file: "/test/file.txt"');
-        expect(formatted).to.include('encoding: "utf-8"');
-        expect(formatted).to.include('lines: 10');
+        expect(formatted).toContain('file: "/test/file.txt"');
+        expect(formatted).toContain('encoding: "utf-8"');
+        expect(formatted).toContain('lines: 10');
       });
 
       it('should handle no arguments', () => {
@@ -265,7 +265,7 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedArgs();
-        expect(formatted).to.equal('No arguments provided');
+        expect(formatted).toBe('No arguments provided');
       });
 
       it('should handle complex argument types', () => {
@@ -282,8 +282,8 @@ describe('ProviderError', () => {
         );
 
         const formatted = error.getFormattedArgs();
-        expect(formatted).to.include('config:');
-        expect(formatted).to.include('list:');
+        expect(formatted).toContain('config:');
+        expect(formatted).toContain('list:');
       });
     });
   });
@@ -300,9 +300,9 @@ describe('ProviderError', () => {
       );
 
       const formatted = error.getFormattedMessage();
-      expect(formatted).to.include('[PROVIDER]');
-      expect(formatted).to.include('Provider');
-      expect(formatted).to.include('execution failed');
+      expect(formatted).toContain('[PROVIDER]');
+      expect(formatted).toContain('Provider');
+      expect(formatted).toContain('execution failed');
     });
 
     it('should include provider data in JSON output', () => {
@@ -315,10 +315,10 @@ describe('ProviderError', () => {
       );
 
       const json = error.toJSON();
-      expect(json.category).to.equal('provider');
-      expect(json.data.provider).to.equal('fileProvider');
-      expect(json.data.providerArgs).to.deep.equal(args);
-      expect(json.data.providerType).to.equal('invalid_args');
+      expect(json.category).toBe('provider');
+      expect(json.data.provider).toBe('fileProvider');
+      expect(json.data.providerArgs).toEqual(args);
+      expect(json.data.providerType).toBe('invalid_args');
     });
   });
 });

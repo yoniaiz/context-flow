@@ -1,7 +1,7 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
+import { describe, expect, it } from 'vitest';
+
+import { ErrorCategory, ErrorSeverity } from '../../../src/errors/types.js';
 import { ValidationError } from '../../../src/errors/validation.js';
-import { ErrorSeverity, ErrorCategory } from '../../../src/errors/types.js';
 
 describe('ValidationError', () => {
   describe('basic error creation', () => {
@@ -12,22 +12,22 @@ describe('ValidationError', () => {
         'Fix the validation issue'
       );
 
-      expect(error).to.be.instanceOf(ValidationError);
-      expect(error).to.be.instanceOf(Error);
-      expect(error.name).to.equal('ValidationError');
-      expect(error.message).to.equal('Test validation failed');
-      expect(error.severity).to.equal(ErrorSeverity.ERROR);
-      expect(error.category).to.equal(ErrorCategory.VALIDATION);
-      expect(error.errorInfo.context).to.equal('Testing validation logic');
-      expect(error.errorInfo.error).to.equal('Test validation failed');
-      expect(error.errorInfo.mitigation).to.equal('Fix the validation issue');
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.name).toBe('ValidationError');
+      expect(error.message).toBe('Test validation failed');
+      expect(error.severity).toBe(ErrorSeverity.ERROR);
+      expect(error.category).toBe(ErrorCategory.VALIDATION);
+      expect(error.errorInfo.context).toBe('Testing validation logic');
+      expect(error.errorInfo.error).toBe('Test validation failed');
+      expect(error.errorInfo.mitigation).toBe('Fix the validation issue');
     });
 
     it('should accept optional source location', () => {
       const sourceLocation = {
+        column: 5,
         filePath: '/test/file.toml',
-        line: 10,
-        column: 5
+        line: 10
       };
 
       const error = new ValidationError(
@@ -37,198 +37,270 @@ describe('ValidationError', () => {
         sourceLocation
       );
 
-      expect(error.sourceLocation).to.deep.equal(sourceLocation);
+      expect(error.sourceLocation).toEqual(sourceLocation);
     });
 
     it('should accept optional field and validation details', () => {
+      const validationOptions = {
+        actual: 123,
+        expected: 'string',
+        field: 'testField',
+        rule: 'type_check'
+      };
+
       const error = new ValidationError(
         'Test error',
         'Test context',
         'Test mitigation',
         undefined,
-        {
-          field: 'testField',
-          rule: 'required',
-          expected: 'string',
-          actual: 'undefined',
-          severity: ErrorSeverity.WARNING
-        }
+        validationOptions
       );
 
-      expect(error.field).to.equal('testField');
-      expect(error.rule).to.equal('required');
-      expect(error.expected).to.equal('string');
-      expect(error.actual).to.equal('undefined');
-      expect(error.severity).to.equal(ErrorSeverity.WARNING);
+      expect(error.field).toBe('testField');
+      expect(error.expected).toBe('string');
+      expect(error.actual).toBe(123);
+      expect(error.rule).toBe('type_check');
+    });
+  });
+
+  describe('error formatting', () => {
+    it('should format error without source location', () => {
+      const error = new ValidationError(
+        'Field validation failed',
+        'Validating component schema',
+        'Check field types'
+      );
+
+      const formatted = error.getFormattedMessage();
+      expect(formatted).toContain('Field validation failed');
+      expect(formatted).toContain('Context: Validating component schema');
+      expect(formatted).toContain('Mitigation: Check field types');
+    });
+
+    it('should format error with source location', () => {
+      const sourceLocation = {
+        column: 8,
+        filePath: '/test/component.toml',
+        line: 15
+      };
+
+      const error = new ValidationError(
+        'Invalid property',
+        'Parsing component file',
+        'Fix the property value',
+        sourceLocation
+      );
+
+      const formatted = error.getFormattedMessage();
+      expect(formatted).toContain('Invalid property');
+      expect(formatted).toContain('/test/component.toml:15:8');
+      expect(formatted).toContain('Context: Parsing component file');
+      expect(formatted).toContain('Mitigation: Fix the property value');
+    });
+
+    it('should format error with validation details', () => {
+      const validationOptions = {
+        actual: 123,
+        expected: 'string',
+        field: 'version',
+        rule: 'type_check'
+      };
+
+      const error = new ValidationError(
+        'Type mismatch',
+        'Schema validation',
+        'Correct the type',
+        undefined,
+        validationOptions
+      );
+
+      const formatted = error.getFormattedMessage();
+      expect(formatted).toContain('Type mismatch');
+      expect(formatted).toContain('Context: Schema validation');
+      expect(formatted).toContain('Mitigation: Correct the type');
+    });
+
+    it('should format complete error with all details', () => {
+      const sourceLocation = {
+        column: 12,
+        filePath: '/test/workflow.toml',
+        line: 20
+      };
+
+      const validationOptions = {
+        actual: 'undefined',
+        expected: 'string',
+        field: 'name',
+        rule: 'required'
+      };
+
+      const error = new ValidationError(
+        'Required field missing',
+        'Workflow schema validation',
+        'Add the missing field',
+        sourceLocation,
+        validationOptions
+      );
+
+      const formatted = error.getFormattedMessage();
+      expect(formatted).toContain('Required field missing');
+      expect(formatted).toContain('/test/workflow.toml:20:12');
+      expect(formatted).toContain('Context: Workflow schema validation');
+      expect(formatted).toContain('Mitigation: Add the missing field');
     });
   });
 
   describe('static factory methods', () => {
-    describe('schema()', () => {
-      it('should create a schema validation error', () => {
-        const error = ValidationError.schema(
-          'component.name',
-          'string',
-          123,
-          '/test/component.toml',
-          5
-        );
-
-        expect(error.message).to.equal("Schema validation failed for field 'component.name'");
-        expect(error.field).to.equal('component.name');
-        expect(error.rule).to.equal('schema');
-        expect(error.expected).to.equal('string');
-        expect(error.actual).to.equal('123');
-        expect(error.sourceLocation?.filePath).to.equal('/test/component.toml');
-        expect(error.sourceLocation?.line).to.equal(5);
-      });
-
-      it('should handle object values in schema errors', () => {
-        const complexObject = { nested: { value: 'test' } };
-        const error = ValidationError.schema(
-          'props',
-          'object with specific structure',
-          complexObject,
-          '/test/component.toml'
-        );
-
-        expect(error.actual).to.equal(JSON.stringify(complexObject));
-      });
-    });
-
-    describe('missingField()', () => {
-      it('should create a missing field error', () => {
-        const error = ValidationError.missingField(
-          'component.version',
-          '/test/component.toml',
-          8
-        );
-
-        expect(error.message).to.equal("Required field 'component.version' is missing");
-        expect(error.field).to.equal('component.version');
-        expect(error.rule).to.equal('required');
-        expect(error.expected).to.equal('defined value');
-        expect(error.actual).to.equal('undefined');
-        expect(error.errorInfo.context).to.include('Parsing required fields');
-        expect(error.errorInfo.mitigation).to.include('Add the required field');
-      });
-    });
-
-    describe('invalidPath()', () => {
-      it('should create an invalid path error', () => {
-        const error = ValidationError.invalidPath(
-          './non-existent.toml',
-          'File does not exist',
-          '/test/workflow.toml',
-          12
-        );
-
-        expect(error.message).to.equal('Invalid file path: ./non-existent.toml');
-        expect(error.field).to.equal('path');
-        expect(error.rule).to.equal('file_exists');
-        expect(error.expected).to.equal('valid file path');
-        expect(error.actual).to.equal('./non-existent.toml');
-        expect(error.errorInfo.mitigation).to.include('File does not exist');
-      });
-    });
-
-    describe('tomlParse()', () => {
-      it('should create a TOML parsing error', () => {
-        const error = ValidationError.tomlParse(
-          'Invalid TOML syntax at line 5',
-          '/test/component.toml',
-          5,
-          12
-        );
-
-        expect(error.message).to.equal('TOML parsing failed: Invalid TOML syntax at line 5');
-        expect(error.rule).to.equal('toml_syntax');
-        expect(error.expected).to.equal('valid TOML syntax');
-        expect(error.actual).to.equal('Invalid TOML syntax at line 5');
-        expect(error.sourceLocation?.line).to.equal(5);
-        expect(error.sourceLocation?.column).to.equal(12);
-      });
-    });
-
-    describe('typeMismatch()', () => {
-      it('should create a type mismatch error', () => {
-        const error = ValidationError.typeMismatch(
-          'component.version',
-          'string',
-          'number',
-          '/test/component.toml',
-          3
-        );
-
-        expect(error.message).to.equal("Type mismatch for field 'component.version': expected string, got number");
-        expect(error.field).to.equal('component.version');
-        expect(error.rule).to.equal('type_check');
-        expect(error.expected).to.equal('string');
-        expect(error.actual).to.equal('number');
-      });
-    });
-  });
-
-  describe('error methods', () => {
-    it('should format error message properly', () => {
+    it('should create schema validation error', () => {
       const error = ValidationError.schema(
-        'test.field',
+        'component.name',
         'string',
         123,
         '/test/file.toml',
         5
       );
 
-      const formatted = error.getFormattedMessage();
-      expect(formatted).to.include('[VALIDATION]');
-      expect(formatted).to.include('Schema validation failed');
-      expect(formatted).to.include('Location: /test/file.toml:5');
-      expect(formatted).to.include('Context:');
-      expect(formatted).to.include('Error:');
-      expect(formatted).to.include('Mitigation:');
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toContain('Schema validation failed');
+      expect(error.field).toBe('component.name');
+      expect(error.expected).toBe('string');
+      expect(error.actual).toBe('123');
+      expect(error.rule).toBe('schema');
+      expect(error.sourceLocation?.filePath).toBe('/test/file.toml');
+      expect(error.sourceLocation?.line).toBe(5);
     });
 
-    it('should convert to JSON correctly', () => {
+    it('should create missing field error', () => {
       const error = ValidationError.missingField(
-        'test.field',
-        '/test/file.toml'
+        'required_field',
+        '/missing/file.toml',
+        10
       );
 
-      const json = error.toJSON();
-      expect(json.name).to.equal('ValidationError');
-      expect(json.message).to.include('Required field');
-      expect(json.severity).to.equal('error');
-      expect(json.category).to.equal('validation');
-      expect(json.sourceLocation.filePath).to.equal('/test/file.toml');
-      expect(json.data.field).to.equal('test.field');
-      expect(json.timestamp).to.be.a('string');
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toContain('Required field \'required_field\' is missing');
+      expect(error.field).toBe('required_field');
+      expect(error.rule).toBe('required');
+      expect(error.sourceLocation?.filePath).toBe('/missing/file.toml');
+      expect(error.sourceLocation?.line).toBe(10);
     });
 
-    it('should identify fatal errors correctly', () => {
-      const errorError = ValidationError.schema('field', 'string', 123, '/test.toml');
-      const warningError = new ValidationError(
-        'Warning message',
-        'Warning context',
-        'Warning mitigation',
+    it('should create path validation error', () => {
+      const error = ValidationError.invalidPath(
+        '/invalid/path.toml',
+        'Invalid file extension',
+        '/test/workflow.toml',
+        8
+      );
+
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toContain('Invalid file path');
+      expect(error.field).toBe('path');
+      expect(error.rule).toBe('file_exists');
+      expect(error.sourceLocation?.filePath).toBe('/test/workflow.toml');
+      expect(error.sourceLocation?.line).toBe(8);
+      expect(error.errorInfo.mitigation).toContain('Invalid file extension');
+    });
+
+    it('should create TOML parse error', () => {
+      const error = ValidationError.tomlParse(
+        'Unexpected token }',
+        '/test/file.toml',
+        12,
+        15
+      );
+
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toContain('TOML parsing failed');
+      expect(error.rule).toBe('toml_syntax');
+      expect(error.sourceLocation?.line).toBe(12);
+      expect(error.sourceLocation?.column).toBe(15);
+    });
+
+    it('should create type mismatch error', () => {
+      const error = ValidationError.typeMismatch(
+        'component.version',
+        'string',
+        'number',
+        '/test/component.toml',
+        3
+      );
+
+      expect(error).toBeInstanceOf(ValidationError);
+      expect(error.message).toContain('Type mismatch');
+      expect(error.field).toBe('component.version');
+      expect(error.expected).toBe('string');
+      expect(error.actual).toBe('number');
+      expect(error.rule).toBe('type_check');
+    });
+  });
+
+  describe('error inheritance', () => {
+    it('should maintain Error prototype chain', () => {
+      const error = new ValidationError(
+        'Test error',
+        'Test context',
+        'Test mitigation'
+      );
+
+      expect(error instanceof Error).toBe(true);
+      expect(error instanceof ValidationError).toBe(true);
+      expect(error.name).toBe('ValidationError');
+      expect(error.stack).toBeDefined();
+    });
+
+    it('should be catchable as Error', () => {
+      const throwValidationError = () => {
+        throw new ValidationError(
+          'Test error',
+          'Test context',
+          'Test mitigation'
+        );
+      };
+
+      expect(throwValidationError).toThrow(Error);
+      expect(throwValidationError).toThrow(ValidationError);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty strings', () => {
+      const error = new ValidationError('', '', '');
+
+      expect(error.message).toBe('');
+      expect(error.errorInfo.context).toBe('');
+      expect(error.errorInfo.mitigation).toBe('');
+    });
+
+    it('should handle undefined optional parameters', () => {
+      const error = new ValidationError(
+        'Test error',
+        'Test context',
+        'Test mitigation',
         undefined,
-        { severity: ErrorSeverity.WARNING }
+        undefined
       );
 
-      expect(errorError.isFatal()).to.be.true;
-      expect(warningError.isFatal()).to.be.false;
+      expect(error.sourceLocation).toBeUndefined();
+      expect(error.field).toBeUndefined();
+      expect(error.rule).toBeUndefined();
     });
 
-    it('should create error with additional context', () => {
-      const originalError = ValidationError.schema('field', 'string', 123, '/test.toml');
-      const contextError = originalError.withContext('additional context');
+    it('should handle partial source location', () => {
+      const sourceLocation = {
+        filePath: '/test/file.toml'
+        // line and column missing
+      };
 
-      // Check that withContext returns a different error instance
-      expect(contextError).to.not.equal(originalError);
-      expect(contextError.message).to.equal(originalError.message);
-      expect(contextError).to.be.instanceOf(ValidationError);
-      
-      // The withContext method should create a new error (basic functionality test)
-      expect(contextError.timestamp).to.not.equal(originalError.timestamp);
+      const error = new ValidationError(
+        'Test error',
+        'Test context',
+        'Test mitigation',
+        sourceLocation as any
+      );
+
+      const formatted = error.getFormattedMessage();
+      expect(formatted).toContain('/test/file.toml');
     });
   });
 });

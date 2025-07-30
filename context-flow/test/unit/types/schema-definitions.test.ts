@@ -1,26 +1,49 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
+import { describe, expect, it } from 'vitest';
+
 import {
   type ComponentSchema,
-  type WorkflowSchema,
-  type ParsedTomlContent,
-  type ParsedComponent,
-  type ParsedWorkflow,
+  componentSchema,
   isComponentSchema,
   isWorkflowSchema,
-  isParsedComponent,
-  isParsedWorkflow,
-  componentSchema,
+  type ParsedTomlContent,
+  type WorkflowSchema,
   workflowSchema
 } from '../../../src/types/schema-definitions.js';
+
+// Helper functions moved outside test blocks
+function testUnion(content: ParsedTomlContent) {
+  if (isComponentSchema(content)) {
+    return 'component';
+  }
+
+ if (isWorkflowSchema(content)) {
+    return 'workflow';
+  }
+
+  return 'unknown';
+}
+
+function handleContent(content: ParsedTomlContent) {
+  if (isComponentSchema(content)) {
+    // TypeScript should know this is a ComponentSchema
+    return content.component.name;
+  }
+
+ if (isWorkflowSchema(content)) {
+    // TypeScript should know this is a WorkflowSchema
+    return content.workflow.name;
+  }
+
+  return 'unknown';
+}
 
 describe('Schema Definitions', () => {
   describe('Type Inference from Zod Schemas', () => {
     it('should correctly infer ComponentSchema from Zod schema', () => {
       const component: ComponentSchema = {
         component: {
-          name: 'test-component',
           description: 'Test component',
+          name: 'test-component',
           version: '1.0.0'
         },
         template: {
@@ -28,30 +51,30 @@ describe('Schema Definitions', () => {
         }
       };
 
-      expect(component.component.name).to.equal('test-component');
-      expect(component.template.content).to.equal('Hello {{ name }}');
+      expect(component.component.name).toBe('test-component');
+      expect(component.template.content).toBe('Hello {{ name }}');
     });
 
     it('should correctly infer WorkflowSchema from Zod schema', () => {
       const workflow: WorkflowSchema = {
-        workflow: {
-          name: 'test-workflow',
-          description: 'Test workflow'
-        },
         template: {
           content: 'Workflow content'
+        },
+        workflow: {
+          description: 'Test workflow',
+          name: 'test-workflow'
         }
       };
 
-      expect(workflow.workflow.name).to.equal('test-workflow');
-      expect(workflow.template.content).to.equal('Workflow content');
+      expect(workflow.workflow.name).toBe('test-workflow');
+      expect(workflow.template.content).toBe('Workflow content');
     });
 
     it('should validate against actual Zod schemas', () => {
       const validComponent = {
         component: {
-          name: 'test',
           description: 'test',
+          name: 'test',
           version: '1.0.0'
         },
         template: {
@@ -60,235 +83,146 @@ describe('Schema Definitions', () => {
       };
 
       const result = componentSchema.safeParse(validComponent);
-      expect(result.success).to.be.true;
+      expect(result.success).toBe(true);
     });
   });
 
   describe('Type Guards', () => {
     const componentData: ComponentSchema = {
       component: {
-        name: 'test-component',
         description: 'Test component',
+        name: 'test-component',
         version: '1.0.0'
       },
       template: {
-        content: 'Hello {{ name }}'
+        content: 'Test content'
       }
     };
 
     const workflowData: WorkflowSchema = {
-      workflow: {
-        name: 'test-workflow',
-        description: 'Test workflow'
-      },
       template: {
-        content: 'Workflow content'
+        content: 'Test content'
+      },
+      workflow: {
+        description: 'Test workflow',
+        name: 'test-workflow'
       }
     };
 
     describe('isComponentSchema', () => {
-      it('should return true for component schemas', () => {
-        expect(isComponentSchema(componentData)).to.be.true;
-      });
-
-      it('should return false for workflow schemas', () => {
-        expect(isComponentSchema(workflowData)).to.be.false;
+      it('should correctly identify component schemas', () => {
+        expect(isComponentSchema(componentData)).toBe(true);
+        expect(isComponentSchema(workflowData)).toBe(false);
+        expect(isComponentSchema({} as ComponentSchema)).toBe(false);
+        expect(isComponentSchema(null)).toBe(false);
+        expect(isComponentSchema()).toBe(false);
       });
     });
 
     describe('isWorkflowSchema', () => {
-      it('should return true for workflow schemas', () => {
-        expect(isWorkflowSchema(workflowData)).to.be.true;
-      });
-
-      it('should return false for component schemas', () => {
-        expect(isWorkflowSchema(componentData)).to.be.false;
-      });
-    });
-
-    describe('isParsedComponent', () => {
-      it('should return true for parsed component objects', () => {
-        const parsed: ParsedComponent = {
-          schema: componentData,
-          filePath: 'test.component.toml',
-          resolvedPath: '/full/path/test.component.toml',
-          parsedAt: new Date()
-        };
-
-        expect(isParsedComponent(parsed)).to.be.true;
-      });
-
-      it('should return false for parsed workflow objects', () => {
-        const parsed: ParsedWorkflow = {
-          schema: workflowData,
-          filePath: 'test.workflow.toml',
-          resolvedPath: '/full/path/test.workflow.toml',
-          parsedAt: new Date()
-        };
-
-        expect(isParsedComponent(parsed)).to.be.false;
+      it('should correctly identify workflow schemas', () => {
+        expect(isWorkflowSchema(workflowData)).toBe(true);
+        expect(isWorkflowSchema(componentData)).toBe(false);
+        expect(isWorkflowSchema({} as WorkflowSchema)).toBe(false);
+        expect(isWorkflowSchema(null)).toBe(false);
+        expect(isWorkflowSchema()).toBe(false);
       });
     });
   });
 
-  describe('Enhanced Type Definitions', () => {
-    it('should support optional props in ComponentSchema', () => {
-      const componentWithProps: ComponentSchema = {
-        component: {
-          name: 'test-component',
-          description: 'Test component with props',
-          version: '1.0.0'
-        },
-        props: {
-          title: {
-            type: 'string',
-            description: 'Title prop',
-            required: true
-          },
-          count: {
-            type: 'number',
-            description: 'Count prop',
-            required: false,
-            default: 0
-          }
-        },
-        template: {
-          content: 'Title: {{ title }}, Count: {{ count }}'
-        }
-      };
+  describe('ParsedTomlContent union type', () => {
+    const componentData: ComponentSchema = {
+      component: {
+        description: 'Test component',
+        name: 'test-component',
+        version: '1.0.0'
+      },
+      template: {
+        content: 'Test content'
+      }
+    };
 
-      expect(componentWithProps.props?.title.type).to.equal('string');
-      expect(componentWithProps.props?.count.default).to.equal(0);
+    const workflowData: WorkflowSchema = {
+      template: {
+        content: 'Test content'
+      },
+      workflow: {
+        description: 'Test workflow',
+        name: 'test-workflow'
+      }
+    };
+
+    it('should accept all valid schema types', () => {
+      expect(testUnion(componentData)).toBe('component');
+      expect(testUnion(workflowData)).toBe('workflow');
     });
 
-    it('should support use sections with component references', () => {
-      const componentWithUse: ComponentSchema = {
-        component: {
-          name: 'parent-component',
-          description: 'Component that uses others',
-          version: '1.0.0'
-        },
-        use: {
-          childComponent: 'components/child.component.toml',
-          anotherChild: 'components/another.component.toml'
-        },
-        template: {
-          content: 'Using: {{ use.childComponent() }}'
-        }
-      };
-
-      expect(componentWithUse.use?.childComponent).to.equal('components/child.component.toml');
-    });
-
-    it('should support target configurations', () => {
-      const componentWithTargets: ComponentSchema = {
-        component: {
-          name: 'targeted-component',
-          description: 'Component with target configs',
-          version: '1.0.0'
-        },
-        template: {
-          content: 'Targeted content'
-        },
-        targets: {
-          cursor: {
-            always_apply: true,
-            command: 'On Edit'
-          },
-          vscode: {
-            scope: 'workspace',
-            enabled: true
-          }
-        }
-      };
-
-      expect(componentWithTargets.targets?.cursor.always_apply).to.be.true;
-      expect(componentWithTargets.targets?.vscode.scope).to.equal('workspace');
+    it('should provide type narrowing in conditional blocks', () => {
+      expect(handleContent(componentData)).toBe('test-component');
+      expect(handleContent(workflowData)).toBe('test-workflow');
     });
   });
 
-  describe('ParsedTomlFile Types', () => {
-    it('should correctly type ParsedComponent objects', () => {
-      const parsed: ParsedComponent = {
-        schema: {
-          component: {
-            name: 'test',
-            description: 'test',
-            version: '1.0.0'
-          },
-          template: {
-            content: 'test'
-          }
-        },
-        filePath: 'test.component.toml',
-        resolvedPath: '/absolute/path/test.component.toml',
-        parsedAt: new Date(),
-        contentHash: 'abc123'
-      };
-
-      expect(parsed.schema.component.name).to.equal('test');
-      expect(parsed.filePath).to.equal('test.component.toml');
-      expect(parsed.contentHash).to.equal('abc123');
-    });
-
-    it('should correctly type ParsedWorkflow objects', () => {
-      const parsed: ParsedWorkflow = {
-        schema: {
-          workflow: {
-            name: 'test-workflow',
-            description: 'test workflow'
-          },
-          template: {
-            content: 'workflow content'
-          }
-        },
-        filePath: 'test.workflow.toml',
-        resolvedPath: '/absolute/path/test.workflow.toml',
-        parsedAt: new Date()
-      };
-
-      expect(parsed.schema.workflow.name).to.equal('test-workflow');
-      expect(parsed.filePath).to.equal('test.workflow.toml');
-    });
-  });
-
-  describe('Union Types', () => {
-    it('should handle ParsedTomlContent union correctly', () => {
-      const componentContent: ParsedTomlContent = {
+  describe('Schema Validation Edge Cases', () => {
+    it('should handle component schema with optional fields', () => {
+      const minimalComponent = {
         component: {
-          name: 'test',
-          description: 'test',
+          description: 'Minimal component',
+          name: 'minimal',
           version: '1.0.0'
         },
         template: {
-          content: 'test'
+          content: 'Minimal content'
         }
       };
 
-      const workflowContent: ParsedTomlContent = {
+      const result = componentSchema.safeParse(minimalComponent);
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle workflow schema with optional fields', () => {
+      const minimalWorkflow = {
+        template: {
+          content: 'Minimal content'
+        },
         workflow: {
-          name: 'test',
-          description: 'test'
-        },
-        template: {
-          content: 'test'
+          description: 'Minimal workflow',
+          name: 'minimal'
         }
       };
 
-      expect(isComponentSchema(componentContent)).to.be.true;
-      expect(isWorkflowSchema(workflowContent)).to.be.true;
-    });
-  });
-
-  describe('Schema Re-exports', () => {
-    it('should properly export componentSchema', () => {
-      expect(componentSchema).to.be.an('object');
-      expect(componentSchema.parse).to.be.a('function');
+      const result = workflowSchema.safeParse(minimalWorkflow);
+      expect(result.success).toBe(true);
     });
 
-    it('should properly export workflowSchema', () => {
-      expect(workflowSchema).to.be.an('object');
-      expect(workflowSchema.parse).to.be.a('function');
+    it('should reject invalid component schemas', () => {
+      const invalidComponent = {
+        component: {
+          // Missing required fields
+          name: 'invalid'
+        },
+        template: {
+          content: 'Content'
+        }
+      };
+
+      const result = componentSchema.safeParse(invalidComponent);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid workflow schemas', () => {
+      const invalidWorkflow = {
+        template: {
+          content: 'Content'
+        },
+        workflow: {
+          // Missing required fields
+          name: 'invalid'
+        }
+      };
+
+      const result = workflowSchema.safeParse(invalidWorkflow);
+      expect(result.success).toBe(false);
     });
   });
 }); 

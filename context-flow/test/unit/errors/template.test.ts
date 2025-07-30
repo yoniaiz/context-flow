@@ -1,7 +1,7 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
+import { describe, expect, it } from 'vitest';
+
 import { TemplateError } from '../../../src/errors/template.js';
-import { ErrorSeverity, ErrorCategory } from '../../../src/errors/types.js';
+import { ErrorCategory, ErrorSeverity } from '../../../src/errors/types.js';
 
 describe('TemplateError', () => {
   describe('basic error creation', () => {
@@ -12,12 +12,12 @@ describe('TemplateError', () => {
         'Check template syntax'
       );
 
-      expect(error).to.be.instanceOf(TemplateError);
-      expect(error).to.be.instanceOf(Error);
-      expect(error.name).to.equal('TemplateError');
-      expect(error.message).to.equal('Template rendering failed');
-      expect(error.severity).to.equal(ErrorSeverity.ERROR);
-      expect(error.category).to.equal(ErrorCategory.TEMPLATE);
+      expect(error).toBeInstanceOf(TemplateError);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.name).toBe('TemplateError');
+      expect(error.message).toBe('Template rendering failed');
+      expect(error.severity).toBe(ErrorSeverity.ERROR);
+      expect(error.category).toBe(ErrorCategory.TEMPLATE);
     });
 
     it('should accept optional template details', () => {
@@ -29,19 +29,19 @@ describe('TemplateError', () => {
         'Test mitigation',
         { filePath: '/test/template.toml' },
         {
-          template: 'MainTemplate',
+          availableVariables: availableVars,
           engine: 'nunjucks',
+          template: 'MainTemplate',
           templateContent,
-          templateType: 'render',
-          availableVariables: availableVars
+          templateType: 'render'
         }
       );
 
-      expect(error.template).to.equal('MainTemplate');
-      expect(error.engine).to.equal('nunjucks');
-      expect(error.templateContent).to.equal(templateContent);
-      expect(error.templateType).to.equal('render');
-      expect(error.availableVariables).to.deep.equal(availableVars);
+      expect(error.template).toBe('MainTemplate');
+      expect(error.engine).toBe('nunjucks');
+      expect(error.templateContent).toBe(templateContent);
+      expect(error.templateType).toBe('render');
+      expect(error.availableVariables).toEqual(availableVars);
     });
   });
 
@@ -56,12 +56,12 @@ describe('TemplateError', () => {
           8
         );
 
-        expect(error.message).to.equal('Template syntax error: Unexpected token }');
-        expect(error.template).to.equal('MainTemplate');
-        expect(error.engine).to.equal('nunjucks');
-        expect(error.templateType).to.equal('syntax');
-        expect(error.sourceLocation?.line).to.equal(12);
-        expect(error.sourceLocation?.column).to.equal(8);
+        expect(error.message).toBe('Template syntax error: Unexpected token }');
+        expect(error.template).toBe('MainTemplate');
+        expect(error.engine).toBe('nunjucks');
+        expect(error.templateType).toBe('syntax');
+        expect(error.sourceLocation?.line).toBe(12);
+        expect(error.sourceLocation?.column).toBe(8);
       });
     });
 
@@ -74,10 +74,10 @@ describe('TemplateError', () => {
           5
         );
 
-        expect(error.message).to.equal('Template compilation failed: Invalid filter "unknown"');
-        expect(error.template).to.equal('HeaderTemplate');
-        expect(error.templateType).to.equal('compile');
-        expect(error.errorInfo.mitigation).to.include('Fix the template compilation error');
+        expect(error.message).toBe('Template compilation failed: Invalid filter "unknown"');
+        expect(error.template).toBe('HeaderTemplate');
+        expect(error.templateType).toBe('compile');
+        expect(error.errorInfo.mitigation).toContain('Fix the template compilation error');
       });
     });
 
@@ -92,11 +92,11 @@ describe('TemplateError', () => {
           8
         );
 
-        expect(error.message).to.equal('Template rendering failed: Variable "data" is undefined');
-        expect(error.template).to.equal('ContentTemplate');
-        expect(error.templateType).to.equal('render');
-        expect(error.availableVariables).to.deep.equal(availableVars);
-        expect(error.errorInfo.mitigation).to.include('Available variables: props, components');
+        expect(error.message).toBe('Template rendering failed: Variable "data" is undefined');
+        expect(error.template).toBe('ContentTemplate');
+        expect(error.templateType).toBe('render');
+        expect(error.availableVariables).toEqual(availableVars);
+        expect(error.errorInfo.mitigation).toContain('Available variables: props, components');
       });
 
       it('should handle rendering error without available variables', () => {
@@ -106,8 +106,8 @@ describe('TemplateError', () => {
           '/test.toml'
         );
 
-        expect(error.availableVariables).to.be.undefined;
-        expect(error.errorInfo.mitigation).not.to.include('Available variables:');
+        expect(error.availableVariables).toBeUndefined();
+        expect(error.errorInfo.mitigation).not.toContain('Available variables:');
       });
     });
 
@@ -122,10 +122,10 @@ describe('TemplateError', () => {
           10
         );
 
-        expect(error.message).to.equal("Undefined variable 'unknownVar' in template");
-        expect(error.templateType).to.equal('variable');
-        expect(error.availableVariables).to.deep.equal(availableVars);
-        expect(error.errorInfo.mitigation).to.include('Available variables: props, data');
+        expect(error.message).toBe("Undefined variable 'unknownVar' in template");
+        expect(error.templateType).toBe('variable');
+        expect(error.availableVariables).toEqual(availableVars);
+        expect(error.errorInfo.mitigation).toContain('Available variables: props, data');
       });
 
       it('should handle no available variables', () => {
@@ -136,7 +136,7 @@ describe('TemplateError', () => {
           []
         );
 
-        expect(error.errorInfo.mitigation).to.include('Available variables: none');
+        expect(error.errorInfo.mitigation).toContain('Available variables: none');
       });
     });
 
@@ -149,9 +149,9 @@ describe('TemplateError', () => {
           15
         );
 
-        expect(error.message).to.equal("Invalid or missing filter 'nonexistentFilter'");
-        expect(error.templateType).to.equal('filter');
-        expect(error.errorInfo.context).to.include('Processing template filters');
+        expect(error.message).toBe("Invalid or missing filter 'nonexistentFilter'");
+        expect(error.templateType).toBe('filter');
+        expect(error.errorInfo.context).toContain('Processing template filters');
       });
     });
 
@@ -165,10 +165,10 @@ describe('TemplateError', () => {
           7
         );
 
-        expect(error.message).to.include("Provider 'fileProvider' execution failed");
-        expect(error.message).to.include('File not found: missing.txt');
-        expect(error.templateType).to.equal('filter');
-        expect(error.errorInfo.mitigation).to.include('Check the provider');
+        expect(error.message).toContain("Provider 'fileProvider' execution failed");
+        expect(error.message).toContain('File not found: missing.txt');
+        expect(error.templateType).toBe('filter');
+        expect(error.errorInfo.mitigation).toContain('Check the provider');
       });
     });
 
@@ -181,10 +181,10 @@ describe('TemplateError', () => {
           '/test/component.toml'
         );
 
-        expect(error.message).to.equal("Template 'MissingTemplate' not found");
-        expect(error.template).to.equal('MissingTemplate');
-        expect(error.templateType).to.equal('compile');
-        expect(error.errorInfo.mitigation).to.include('/templates, /components/templates');
+        expect(error.message).toBe("Template 'MissingTemplate' not found");
+        expect(error.template).toBe('MissingTemplate');
+        expect(error.templateType).toBe('compile');
+        expect(error.errorInfo.mitigation).toContain('/templates, /components/templates');
       });
     });
   });
@@ -201,7 +201,7 @@ describe('TemplateError', () => {
           { templateContent: shortContent }
         );
 
-        expect(error.getTruncatedTemplateContent()).to.equal(shortContent);
+        expect(error.getTruncatedTemplateContent()).toBe(shortContent);
       });
 
       it('should truncate long content', () => {
@@ -215,8 +215,8 @@ describe('TemplateError', () => {
         );
 
         const truncated = error.getTruncatedTemplateContent();
-        expect(truncated).to.have.length(103); // 100 + '...'
-        expect(truncated).to.match(/\.\.\.$/); // Should end with '...'
+        expect(truncated).toHaveLength(103); // 100 + '...'
+        expect(truncated).toMatch(/\.\.\.$/); // Should end with '...'
       });
 
       it('should handle missing template content', () => {
@@ -226,7 +226,7 @@ describe('TemplateError', () => {
           'Test mitigation'
         );
 
-        expect(error.getTruncatedTemplateContent()).to.equal('No template content available');
+        expect(error.getTruncatedTemplateContent()).toBe('No template content available');
       });
     });
   });
@@ -242,9 +242,9 @@ describe('TemplateError', () => {
       );
 
       const formatted = error.getFormattedMessage();
-      expect(formatted).to.include('[TEMPLATE]');
-      expect(formatted).to.include('Undefined variable');
-      expect(formatted).to.include('Location: /test/component.toml:5');
+      expect(formatted).toContain('[TEMPLATE]');
+      expect(formatted).toContain('Undefined variable');
+      expect(formatted).toContain('Location: /test/component.toml:5');
     });
 
     it('should include template data in JSON output', () => {
@@ -257,10 +257,10 @@ describe('TemplateError', () => {
       );
 
       const json = error.toJSON();
-      expect(json.category).to.equal('template');
-      expect(json.data.template).to.equal('TestTemplate');
-      expect(json.data.templateType).to.equal('render');
-      expect(json.data.availableVariables).to.deep.equal(availableVars);
+      expect(json.category).toBe('template');
+      expect(json.data.template).toBe('TestTemplate');
+      expect(json.data.templateType).toBe('render');
+      expect(json.data.availableVariables).toEqual(availableVars);
     });
   });
 });

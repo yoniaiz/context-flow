@@ -1,15 +1,15 @@
-import { expect } from 'chai';
-import { describe, it } from 'mocha';
-import { ErrorFormatter } from '../../../src/errors/formatting.js';
-import { ValidationError } from '../../../src/errors/validation.js';
+import { describe, expect, it } from 'vitest';
+
 import { DependencyError } from '../../../src/errors/dependency.js';
-import { TemplateError } from '../../../src/errors/template.js';
+import { ErrorFormatter } from '../../../src/errors/formatting.js';
 import { ProviderError } from '../../../src/errors/provider.js';
+import { TemplateError } from '../../../src/errors/template.js';
 import { ErrorSeverity } from '../../../src/errors/types.js';
+import { ValidationError } from '../../../src/errors/validation.js';
 
 // Helper function to strip ANSI color codes for testing
 function stripColors(text: string): string {
-  return text.replace(/\u001b\[[0-9;]*m/g, '');
+  return text.replaceAll(/\u001B\[[0-9;]*m/g, '');
 }
 
 describe('ErrorFormatter', () => {
@@ -25,15 +25,15 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('[ERROR][VALIDATION]');
-      expect(formatted).to.include('Schema validation failed');
-      expect(formatted).to.include('Location: /test/component.toml:5');
-      expect(formatted).to.include('Context:');
-      expect(formatted).to.include('Error:');
-      expect(formatted).to.include('Mitigation:');
-      expect(formatted).to.include('Details:');
-      expect(formatted).to.include('field: "component.name"');
-      expect(formatted).to.include('expected: "string"');
+      expect(formatted).toContain('[ERROR][VALIDATION]');
+      expect(formatted).toContain('Schema validation failed');
+      expect(formatted).toContain('Location: /test/component.toml:5');
+      expect(formatted).toContain('Context:');
+      expect(formatted).toContain('Error:');
+      expect(formatted).toContain('Mitigation:');
+      expect(formatted).toContain('Details:');
+      expect(formatted).toContain('field: "component.name"');
+      expect(formatted).toContain('expected: "string"');
     });
 
     it('should format error without source location', () => {
@@ -45,10 +45,10 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('[ERROR][VALIDATION]');
-      expect(formatted).to.include('Test error');
-      expect(formatted).not.to.include('Location:');
-      expect(formatted).to.include('Context: Test context');
+      expect(formatted).toContain('[ERROR][VALIDATION]');
+      expect(formatted).toContain('Test error');
+      expect(formatted).not.toContain('Location:');
+      expect(formatted).toContain('Context: Test context');
     });
 
     it('should format error without additional data', () => {
@@ -60,8 +60,8 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('Simple error');
-      expect(formatted).not.to.include('Details:');
+      expect(formatted).toContain('Simple error');
+      expect(formatted).not.toContain('Details:');
     });
 
     it('should format source location with column', () => {
@@ -74,14 +74,14 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('Location: /test/file.toml:10:15');
+      expect(formatted).toContain('Location: /test/file.toml:10:15');
     });
 
     it('should format source location with context', () => {
       const sourceLocation = {
+        context: 'template section',
         filePath: '/test/file.toml',
-        line: 5,
-        context: 'template section'
+        line: 5
       };
 
       const error = new ValidationError(
@@ -93,7 +93,7 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('Location: /test/file.toml:5 (template section)');
+      expect(formatted).toContain('Location: /test/file.toml:5 (template section)');
     });
   });
 
@@ -101,15 +101,15 @@ describe('ErrorFormatter', () => {
     it('should format empty error list', () => {
       const formatted = stripColors(ErrorFormatter.formatErrorSummary([]));
 
-      expect(formatted).to.equal('✓ No errors found');
+      expect(formatted).toBe('✓ No errors found');
     });
 
     it('should format single error', () => {
       const error = ValidationError.missingField('test', '/test.toml');
       const formatted = stripColors(ErrorFormatter.formatErrorSummary([error]));
 
-      expect(formatted).to.include('✗ 1 error found');
-      expect(formatted).to.include('Required field \'test\' is missing');
+      expect(formatted).toContain('✗ 1 error found');
+      expect(formatted).toContain('Required field \'test\' is missing');
     });
 
     it('should format multiple errors with warnings', () => {
@@ -125,9 +125,9 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.formatErrorSummary([error1, error2, warning]));
 
-      expect(formatted).to.include('✗ 2 errors found');
-      expect(formatted).to.include('⚠ 1 warning found');
-      expect(formatted).to.include('─'.repeat(60)); // Separator between errors
+      expect(formatted).toContain('✗ 2 errors found');
+      expect(formatted).toContain('⚠ 1 warning found');
+      expect(formatted).toContain('─'.repeat(60)); // Separator between errors
     });
 
     it('should format only warnings', () => {
@@ -148,8 +148,8 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.formatErrorSummary([warning1, warning2]));
 
-      expect(formatted).to.include('⚠ 2 warnings found');
-      expect(formatted).not.to.include('✗');
+      expect(formatted).toContain('⚠ 2 warnings found');
+      expect(formatted).not.toContain('✗');
     });
   });
 
@@ -165,9 +165,9 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.formatCompact(error));
 
-      expect(formatted).to.include('[ERROR]');
-      expect(formatted).to.include('Schema validation failed');
-      expect(formatted).to.include('/test/file.toml:10');
+      expect(formatted).toContain('[ERROR]');
+      expect(formatted).toContain('Schema validation failed');
+      expect(formatted).toContain('/test/file.toml:10');
     });
 
     it('should format compact error without location', () => {
@@ -179,9 +179,9 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.formatCompact(error));
 
-      expect(formatted).to.include('[ERROR]');
-      expect(formatted).to.include('Simple error');
-      expect(formatted).not.to.include(':');
+      expect(formatted).toContain('[ERROR]');
+      expect(formatted).toContain('Simple error');
+      expect(formatted).not.toContain(':');
     });
 
     it('should format different error severities', () => {
@@ -207,9 +207,9 @@ describe('ErrorFormatter', () => {
         { severity: ErrorSeverity.INFO }
       );
 
-      expect(stripColors(ErrorFormatter.formatCompact(critical))).to.include('[CRITICAL]');
-      expect(stripColors(ErrorFormatter.formatCompact(warning))).to.include('[WARNING]');
-      expect(stripColors(ErrorFormatter.formatCompact(info))).to.include('[INFO]');
+      expect(stripColors(ErrorFormatter.formatCompact(critical))).toContain('[CRITICAL]');
+      expect(stripColors(ErrorFormatter.formatCompact(warning))).toContain('[WARNING]');
+      expect(stripColors(ErrorFormatter.formatCompact(info))).toContain('[INFO]');
     });
   });
 
@@ -221,10 +221,10 @@ describe('ErrorFormatter', () => {
       const providerError = ProviderError.notFound('unknown', ['file'], '/test.toml');
 
       // We can't easily test colors in unit tests, but we can verify the methods run without error
-      expect(() => ErrorFormatter.format(validationError)).not.to.throw();
-      expect(() => ErrorFormatter.format(dependencyError)).not.to.throw();
-      expect(() => ErrorFormatter.format(templateError)).not.to.throw();
-      expect(() => ErrorFormatter.format(providerError)).not.to.throw();
+      expect(() => ErrorFormatter.format(validationError)).not.toThrow();
+      expect(() => ErrorFormatter.format(dependencyError)).not.toThrow();
+      expect(() => ErrorFormatter.format(templateError)).not.toThrow();
+      expect(() => ErrorFormatter.format(providerError)).not.toThrow();
     });
   });
 
@@ -236,17 +236,17 @@ describe('ErrorFormatter', () => {
         'Test mitigation',
         undefined,
         {
-          field: 'testField',
+          actual: 123,
           expected: 'string',
-          actual: 123
+          field: 'testField'
         }
       );
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('field: "testField"');
-      expect(formatted).to.include('expected: "string"');
-      expect(formatted).to.include('actual: 123');
+      expect(formatted).toContain('field: "testField"');
+      expect(formatted).toContain('expected: "string"');
+      expect(formatted).toContain('actual: 123');
     });
 
     it('should handle arrays in data', () => {
@@ -262,7 +262,7 @@ describe('ErrorFormatter', () => {
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('dependencyChain: ["A", "B", "C"]');
+      expect(formatted).toContain('dependencyChain: ["A", "B", "C"]');
     });
 
     it('should filter out null and undefined values', () => {
@@ -272,37 +272,37 @@ describe('ErrorFormatter', () => {
         'Test mitigation',
         undefined,
         {
-          field: 'testField',
-          expected: undefined,
           actual: undefined,
+          expected: undefined,
+          field: 'testField',
           rule: 'required'
         }
       );
 
       const formatted = stripColors(ErrorFormatter.format(error));
 
-      expect(formatted).to.include('field: "testField"');
-      expect(formatted).to.include('rule: "required"');
-      expect(formatted).not.to.include('expected:');
-      expect(formatted).not.to.include('actual:');
+      expect(formatted).toContain('field: "testField"');
+      expect(formatted).toContain('rule: "required"');
+      expect(formatted).not.toContain('expected:');
+      expect(formatted).not.toContain('actual:');
     });
   });
 
   describe('utility methods', () => {
     it('should create separator', () => {
       const separator = stripColors(ErrorFormatter.createSeparator());
-      expect(separator).to.equal('─'.repeat(60));
+      expect(separator).toBe('─'.repeat(60));
     });
 
     it('should create custom separator', () => {
       const separator = stripColors(ErrorFormatter.createSeparator('=', 20));
-      expect(separator).to.equal('='.repeat(20));
+      expect(separator).toBe('='.repeat(20));
     });
 
     it('should format timestamp', () => {
       const date = new Date('2023-01-01T12:00:00Z');
       const formatted = stripColors(ErrorFormatter.formatTimestamp(date));
-      expect(formatted).to.include('2023-01-01T12:00:00.000Z');
+      expect(formatted).toContain('2023-01-01T12:00:00.000Z');
     });
   });
 });
