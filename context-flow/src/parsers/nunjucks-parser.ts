@@ -3,6 +3,7 @@ import nunjucks from 'nunjucks';
 import type { DependencyTreeResult } from "../builders/DependencyTree.js";
 
 import { ValidationError } from "../errors/index.js";
+import { getBuiltInMacroRegistry, type MacroFunction, type MacroRegistry } from "../macros/index.js";
 import { ComponentDefinition, WorkflowDefinition } from "../types/schema-definitions.js";
 
 export type NunjucksContext = {
@@ -27,13 +28,35 @@ export type UseProxy = {
   getUsedComponents(): Set<string>;
 };
 
+
+
 export class NunjucksParser {
   private dependencyTree?: DependencyTreeResult;
   private env: nunjucks.Environment;
+  private macros: MacroRegistry = {};
 
   constructor() {
     // Configure nunjucks environment with autoescape disabled
     this.env = new nunjucks.Environment(undefined, { autoescape: false });
+    
+    // Register built-in macros
+    this.registerBuiltInMacros();
+  }
+
+  /**
+   * Get list of registered macros
+   */
+  getRegisteredMacros(): string[] {
+    return Object.keys(this.macros);
+  }
+
+  /**
+   * Register a custom macro function
+   */
+  registerMacro(name: string, fn: MacroFunction): void {
+    this.macros[name] = fn;
+    // Register as a global function in Nunjucks
+    this.env.addGlobal(name, fn);
   }
 
   /**
@@ -246,6 +269,18 @@ export class NunjucksParser {
     }
 
     return null;
+  }
+
+  /**
+   * Register built-in macros for common content generation patterns
+   */
+  private registerBuiltInMacros(): void {
+    const builtInMacroRegistry = getBuiltInMacroRegistry();
+    
+    // Register all built-in macros
+    for (const [name, macroFn] of Object.entries(builtInMacroRegistry)) {
+      this.registerMacro(name, macroFn);
+    }
   }
 
   /**

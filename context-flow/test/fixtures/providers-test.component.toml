@@ -1,0 +1,63 @@
+[component]
+name = "MacroTestComponent"
+description = "A test component showcasing built-in macros"
+version = "1.0.0"
+
+[template]
+content = """
+# Testing Macros
+
+## Code Patterns Example
+{{ codePatterns({
+  patterns: [
+    {
+      name: "Error Handling",
+      description: "Proper error handling with try-catch and validation",
+      good: ["try {\n  const result = await riskyOperation();\n  return result;\n} catch (error) {\n  throw new ValidationError('Operation failed', error);\n}"],
+      bad: ["const result = await riskyOperation(); // No error handling"]
+    },
+    {
+      name: "Type Safety",
+      description: "Use proper TypeScript types for better development experience",
+      good: "function processUser(user: User): UserResult {\n  return { id: user.id, name: user.name };\n}",
+      bad: "function processUser(user: any): any {\n  return user;\n}"
+    }
+  ]
+}) }}
+
+## API Documentation Example
+{{ apiDocs({
+  title: "User Management API",
+  description: "REST API for managing user accounts and profiles",
+  endpoints: [
+    {
+      method: "GET",
+      path: "/api/users/:id",
+      description: "Retrieve a user by ID",
+      params: [
+        { name: "id", type: "string", required: true, description: "User ID" }
+      ],
+      response: {
+        type: "User",
+        description: "User object with profile information",
+        example: { id: "123", name: "John Doe", email: "john@example.com" }
+      }
+    },
+    {
+      method: "POST", 
+      path: "/api/users",
+      description: "Create a new user",
+      params: [
+        { name: "name", type: "string", required: true, description: "User's full name" },
+        { name: "email", type: "string", required: true, description: "User's email address" },
+        { name: "age", type: "number", required: false, description: "User's age" }
+      ],
+      response: {
+        type: "User",
+        description: "Created user object",
+        example: { id: "124", name: "Jane Smith", email: "jane@example.com" }
+      }
+    }
+  ]
+}) }}
+"""

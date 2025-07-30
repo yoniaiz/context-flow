@@ -193,6 +193,7 @@ describe('NunjucksParser', () => {
       // Create mock dependency tree
       const mockTree: Partial<DependencyTreeResult> = {
         dependencyOrder: [componentPath],
+        // @ts-expect-error - mock tree
         graph: { getNodeData: () => ({}) },
         nodeCount: 1,
         rootPath: componentPath
@@ -210,6 +211,145 @@ describe('NunjucksParser', () => {
       // Check rendered content
       expect(result.content).toContain('Test Message');
       expect(result.content).toContain('(IMPORTANT)'); // because priority is "high"
+    });
+
+    it('should render component with providers', async () => {
+      // Parse a simple component
+      const componentPath = resolve(fixturesDir, 'providers-test.component.toml');
+      const component = await tomlParser.parseComponent(componentPath);
+
+      // Create mock dependency tree
+      const mockTree: Partial<DependencyTreeResult> = {
+        dependencyOrder: [componentPath],
+        // @ts-expect-error - mock tree
+        graph: { getNodeData: () => ({}) },
+        nodeCount: 1,
+        rootPath: componentPath
+      };
+      nunjucksParser.setDependencyTree(mockTree as DependencyTreeResult);
+
+      // Render the component with props
+      const result = await nunjucksParser.renderComponent(component, {
+        props: {
+          priority: 'high',
+          text: 'Test Message'
+        }
+      });
+
+      // Check rendered content
+      expect(result.content).toMatchInlineSnapshot(`
+        "# Testing Macros
+
+        ## Code Patterns Example
+        # Code Patterns and Best Practices
+
+
+        ## Error Handling
+
+        Proper error handling with try-catch and validation
+
+        ### ✅ Good
+        \`\`\`typescript
+        try {
+          const result = await riskyOperation();
+          return result;
+        } catch (error) {
+          throw new ValidationError('Operation failed', error);
+        }
+        \`\`\`
+
+        ### ❌ Avoid
+        \`\`\`typescript
+        const result = await riskyOperation(); // No error handling
+        \`\`\`
+
+        ## Type Safety
+
+        Use proper TypeScript types for better development experience
+
+        ### ✅ Good
+        \`\`\`typescript
+        function processUser(user: User): UserResult {
+          return { id: user.id, name: user.name };
+        }
+        \`\`\`
+
+        ### ❌ Avoid
+        \`\`\`typescript
+        function processUser(user: any): any {
+          return user;
+        }
+        \`\`\`
+
+        ## API Documentation Example
+        # User Management API
+
+        REST API for managing user accounts and profiles
+
+        ## Endpoints
+
+
+        ### GET /api/users/:id
+
+        Retrieve a user by ID
+
+
+        #### Parameters
+
+        | Name | Type | Required | Description |
+        |------|------|----------|-------------|
+        | id | \`string\` | ✅ | User ID |
+
+
+
+        #### Response
+
+        **Type:** \`User\`
+
+        **Description:** User object with profile information
+
+
+        **Example:**
+        \`\`\`json
+        {
+          "id": "123",
+          "name": "John Doe",
+          "email": "john@example.com"
+        }
+        \`\`\`
+
+
+        ### POST /api/users
+
+        Create a new user
+
+
+        #### Parameters
+
+        | Name | Type | Required | Description |
+        |------|------|----------|-------------|
+        | name | \`string\` | ✅ | User's full name |
+        | email | \`string\` | ✅ | User's email address |
+        | age | \`number\` | ❌ | User's age |
+
+
+
+        #### Response
+
+        **Type:** \`User\`
+
+        **Description:** Created user object
+
+
+        **Example:**
+        \`\`\`json
+        {
+          "id": "124",
+          "name": "Jane Smith",
+          "email": "jane@example.com"
+        }
+        \`\`\`"
+      `)// because priority is "high"
     });
   });
 }); 
